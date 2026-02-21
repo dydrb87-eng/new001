@@ -7,7 +7,11 @@ export function getSeats(): SeatData[] {
   if (typeof window === 'undefined') return [];
   const stored = localStorage.getItem(SEAT_STORAGE_KEY);
   if (stored) {
-    return JSON.parse(stored);
+    try {
+      return JSON.parse(stored);
+    } catch (e) {
+      console.error("Failed to parse seats", e);
+    }
   }
   // Initialize seats 1 to 20
   const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
@@ -31,22 +35,25 @@ export function updateSeatUser(seatId: number, userName: string) {
 export function batchUpdateStatus(status: SeatStatus) {
   const seats = getSeats();
   const now = new Date().toISOString();
+  
+  // Get existing logs to append to them
+  const storedLogs = localStorage.getItem(LOGS_STORAGE_KEY);
+  const allLogs: SeatLog[] = storedLogs ? JSON.parse(storedLogs) : [];
+
   const updatedSeats = seats.map(seat => {
-    // 이미 해당 상태라면 로그를 남기지 않음 (선택 사항)
     if (seat.status !== status) {
       const log: SeatLog = {
-        id: crypto.randomUUID(),
+        id: Math.random().toString(36).substring(2, 11),
         seatId: seat.id,
         action: status,
         timestamp: now,
       };
-      const storedLogs = localStorage.getItem(LOGS_STORAGE_KEY);
-      const allLogs: SeatLog[] = storedLogs ? JSON.parse(storedLogs) : [];
       allLogs.push(log);
-      localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(allLogs));
     }
     return { ...seat, status };
   });
+
+  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(allLogs));
   localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(updatedSeats));
 }
 
@@ -54,8 +61,14 @@ export function getSeatLogs(seatId: number): SeatLog[] {
   if (typeof window === 'undefined') return [];
   const stored = localStorage.getItem(LOGS_STORAGE_KEY);
   if (stored) {
-    const allLogs: SeatLog[] = JSON.parse(stored);
-    return allLogs.filter(log => log.seatId === seatId).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    try {
+      const allLogs: SeatLog[] = JSON.parse(stored);
+      return allLogs
+        .filter(log => log.seatId === seatId)
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    } catch (e) {
+      return [];
+    }
   }
   return [];
 }
@@ -63,7 +76,12 @@ export function getSeatLogs(seatId: number): SeatLog[] {
 export function getAllLogs(): SeatLog[] {
   if (typeof window === 'undefined') return [];
   const stored = localStorage.getItem(LOGS_STORAGE_KEY);
-  return stored ? JSON.parse(stored) : [];
+  if (!stored) return [];
+  try {
+    return JSON.parse(stored);
+  } catch (e) {
+    return [];
+  }
 }
 
 export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: string } {
@@ -81,7 +99,7 @@ export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: str
   localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(seats));
 
   const log: SeatLog = {
-    id: crypto.randomUUID(),
+    id: Math.random().toString(36).substring(2, 11),
     seatId,
     action: newStatus,
     timestamp: now,

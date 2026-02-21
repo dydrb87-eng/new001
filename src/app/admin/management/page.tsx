@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSeats, getSeatLogs, resetAll } from '@/lib/seat-store';
+import { getSeats, getSeatLogs, resetAll, getAllLogs } from '@/lib/seat-store';
 import { SeatData, SeatLog } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -27,7 +26,8 @@ export default function GlobalManagementPage() {
     
     const logsMap: Record<number, SeatLog[]> = {};
     allSeats.forEach(seat => {
-      logsMap[seat.id] = getSeatLogs(seat.id).reverse();
+      // Get all logs and sort by newest first for the UI display
+      logsMap[seat.id] = getSeatLogs(seat.id);
     });
     setSeatLogsMap(logsMap);
   };
@@ -49,23 +49,41 @@ export default function GlobalManagementPage() {
   };
 
   const exportToCsv = () => {
-    // CSV 헤더
-    let csvContent = "\ufeff"; // BOM for Korean characters in Excel
-    csvContent += "자리 번호,사용자,상태,시간\n";
-
-    seats.forEach(seat => {
-      const logs = seatLogsMap[seat.id] || [];
-      logs.forEach(log => {
-        const timeStr = format(new Date(log.timestamp), 'yyyy-MM-dd HH:mm:ss');
-        csvContent += `${seat.id},${seat.userName || "-"},${log.action === 'IN' ? '입실' : '퇴실'},${timeStr}\n`;
+    const allLogs = getAllLogs();
+    if (allLogs.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "데이터 없음",
+        description: "내보낼 이용 기록이 없습니다.",
       });
+      return;
+    }
+
+    // CSV Header with BOM for Excel/Google Sheets Korean support
+    let csvContent = "\ufeff"; 
+    csvContent += "날짜,시간,자리 번호,사용자,작업(상태)\n";
+
+    // Sort all logs by timestamp ascending for a chronological report
+    const sortedLogs = [...allLogs].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    const seatMap = Object.fromEntries(seats.map(s => [s.id, s.userName || ""]));
+
+    sortedLogs.forEach(log => {
+      const dateStr = format(new Date(log.timestamp), 'yyyy-MM-dd');
+      const timeStr = format(new Date(log.timestamp), 'HH:mm:ss');
+      const userName = seatMap[log.seatId] || "-";
+      const actionStr = log.action === 'IN' ? '입실' : '퇴실';
+      
+      csvContent += `${dateStr},${timeStr},${log.seatId},${userName},${actionStr}\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `library_seat_records_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
+    link.setAttribute("download", `도서관_이용기록_전체_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -73,7 +91,7 @@ export default function GlobalManagementPage() {
 
     toast({
       title: "내보내기 완료",
-      description: "이용 기록이 CSV 파일로 다운로드되었습니다. 구글 시트에서 열 수 있습니다.",
+      description: "모든 과거 이용 기록이 CSV 파일로 다운로드되었습니다. 구글 시트에서 '파일 > 가져오기'를 이용하세요.",
     });
   };
 
@@ -99,7 +117,7 @@ export default function GlobalManagementPage() {
               className="gap-2 border-primary/20 hover:bg-primary/5 text-primary font-bold"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              구글시트로 정리 (CSV)
+              구글시트용 데이터 추출 (CSV)
             </Button>
             <Button 
               variant="outline" 
@@ -142,7 +160,7 @@ export default function GlobalManagementPage() {
                 <TableHeader className="bg-muted/50">
                   <TableRow>
                     <TableHead className="w-32 text-center font-bold text-primary border-r">자리 / 사용자</TableHead>
-                    <TableHead className="px-6 font-bold text-primary">이용 기록 (타임라인)</TableHead>
+                    <TableHead className="px-6 font-bold text-primary">이용 기록 (타임라인 - 최신순)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -176,7 +194,7 @@ export default function GlobalManagementPage() {
                                     {log.action}
                                   </Badge>
                                   <span className="text-[10px] font-bold text-muted-foreground tabular-nums">
-                                    {format(new Date(log.timestamp), 'HH:mm')}
+                                    {format(new Date(log.timestamp), 'MM/dd HH:mm')}
                                   </span>
                                 </div>
                               ))
