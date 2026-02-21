@@ -29,6 +29,7 @@ export function updateSeatUser(seatId: number, userName: string) {
   if (seatIndex !== -1) {
     seats[seatIndex].userName = userName;
     localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(seats));
+    window.dispatchEvent(new Event('storage'));
   }
 }
 
@@ -49,7 +50,7 @@ export function batchUpdateStatus(status: SeatStatus) {
   const updatedSeats = seats.map(seat => {
     if (seat.status !== status) {
       const log: SeatLog = {
-        id: Math.random().toString(36).substring(2, 11),
+        id: Math.random().toString(36).substring(2, 11) + Date.now(),
         seatId: seat.id,
         action: status,
         timestamp: now,
@@ -61,6 +62,7 @@ export function batchUpdateStatus(status: SeatStatus) {
 
   localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(allLogs));
   localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(updatedSeats));
+  window.dispatchEvent(new Event('storage'));
 }
 
 export function getSeatLogs(seatId: number): SeatLog[] {
@@ -105,7 +107,7 @@ export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: str
   localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(seats));
 
   const log: SeatLog = {
-    id: Math.random().toString(36).substring(2, 11),
+    id: Math.random().toString(36).substring(2, 11) + Date.now(),
     seatId,
     action: newStatus,
     timestamp: now,
@@ -122,6 +124,7 @@ export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: str
   }
   allLogs.push(log);
   localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(allLogs));
+  window.dispatchEvent(new Event('storage'));
 
   return { action: newStatus, timestamp: now };
 }
@@ -130,5 +133,11 @@ export function resetAll() {
   localStorage.removeItem(SEAT_STORAGE_KEY);
   localStorage.removeItem(LOGS_STORAGE_KEY);
   // Re-initialize to ensure fresh state
-  getSeats();
+  const initialSeats = Array.from({ length: 20 }, (_, i) => ({
+    id: i + 1,
+    status: 'OUT',
+    userName: '',
+  }));
+  localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(initialSeats));
+  window.dispatchEvent(new Event('storage'));
 }

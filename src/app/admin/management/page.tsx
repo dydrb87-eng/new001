@@ -34,6 +34,12 @@ export default function GlobalManagementPage() {
   useEffect(() => {
     loadData();
     setMounted(true);
+
+    const handleStorageChange = () => {
+      loadData();
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const handleReset = () => {

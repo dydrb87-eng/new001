@@ -23,6 +23,13 @@ export default function LibraryDashboard() {
   useEffect(() => {
     refreshSeats();
     setMounted(true);
+
+    // Listen for storage changes to stay in sync
+    const handleStorageChange = () => {
+      refreshSeats();
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const handleBatchAction = (status: 'IN' | 'OUT') => {
@@ -75,7 +82,7 @@ export default function LibraryDashboard() {
                     variant="outline" 
                     size="sm" 
                     onClick={() => handleBatchAction('IN')}
-                    className="gap-2 bg-[hsl(var(--success))] text-white hover:bg-[hsl(var(--success))]/90 hover:text-white border-none"
+                    className="gap-2 bg-[hsl(var(--success))] text-white hover:bg-[hsl(var(--success))]/90 hover:text-white border-none font-bold"
                   >
                     <UserCheck className="w-4 h-4" />
                     전체 입실
@@ -84,7 +91,7 @@ export default function LibraryDashboard() {
                     variant="outline" 
                     size="sm" 
                     onClick={() => handleBatchAction('OUT')}
-                    className="gap-2 bg-slate-500 text-white hover:bg-slate-600 hover:text-white border-none"
+                    className="gap-2 bg-slate-500 text-white hover:bg-slate-600 hover:text-white border-none font-bold"
                   >
                     <UserX className="w-4 h-4" />
                     전체 퇴실
