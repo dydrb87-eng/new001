@@ -25,7 +25,6 @@ export default function LibraryDashboard() {
     setMounted(true);
     refresh();
 
-    // 데이터 변경 이벤트를 감지하여 즉시 UI 갱신
     const handleSync = () => {
       refresh();
     };
@@ -40,10 +39,10 @@ export default function LibraryDashboard() {
       if (success) {
         toast({
           title: "일괄 처리 완료",
-          description: `모든 좌석이 ${status === 'IN' ? '입실' : '퇴실'} 상태로 변경되었습니다.`,
+          description: `모든 자리가 ${status === 'IN' ? '입실' : '퇴실'} 상태로 변경되었습니다.`,
         });
       } else {
-        toast({ description: "변경할 좌석이 없습니다." });
+        toast({ description: "변경할 자리가 없습니다." });
       }
     }
   };
@@ -57,9 +56,9 @@ export default function LibraryDashboard() {
           <div className="space-y-1">
             <h1 className="text-4xl font-black text-primary flex items-center gap-3 font-headline">
               <LayoutGrid className="w-10 h-10 text-accent" />
-              도서관 좌석 매니저
+              도서관 자리 매니저
             </h1>
-            <p className="text-muted-foreground font-medium">실시간 좌석 현황을 확인하고 관리하세요.</p>
+            <p className="text-muted-foreground font-medium">실시간 자리 현황을 확인하고 관리하세요.</p>
           </div>
 
           <div className="flex flex-col gap-4 bg-white p-4 rounded-xl shadow-sm border border-border">

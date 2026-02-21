@@ -16,7 +16,6 @@ export default function SeatDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const seatId = Number(params.id);
-  const isAdmin = searchParams.get('admin') === 'true';
 
   const [lastAction, setLastAction] = useState<{ action: SeatStatus; timestamp: string } | null>(null);
   const [logs, setLogs] = useState<SeatLog[]>([]);
@@ -24,8 +23,6 @@ export default function SeatDetailPage() {
 
   useEffect(() => {
     setMounted(true);
-    // Automatically toggle on visit as per requirements for non-admin or even for link access
-    // But usually, a direct link access should do the action.
     const result = toggleSeat(seatId);
     setLastAction(result);
     setLogs(getSeatLogs(seatId));
@@ -53,12 +50,12 @@ export default function SeatDetailPage() {
           className="group hover:bg-white"
         >
           <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-          좌석 현황으로 돌아가기
+          자리 현황으로 돌아가기
         </Button>
 
         <Card className="shadow-lg border-2 border-white animate-check-in">
           <CardHeader className="text-center bg-primary text-white rounded-t-lg">
-            <CardTitle className="text-5xl font-black mb-2">{seatId}번 좌석</CardTitle>
+            <CardTitle className="text-5xl font-black mb-2">{seatId}번 자리</CardTitle>
             <div className="flex items-center justify-center gap-2">
               {lastAction?.action === 'IN' ? (
                 <Badge variant="secondary" className="bg-accent text-white border-none px-4 py-1 text-base animate-pulse">
@@ -108,57 +105,55 @@ export default function SeatDetailPage() {
           </CardContent>
         </Card>
 
-        {isAdmin && (
-          <Card className="shadow-sm border-border bg-white overflow-hidden">
-            <CardHeader className="border-b bg-muted/30">
-              <CardTitle className="flex items-center gap-2 text-primary">
-                <History className="w-5 h-5 text-accent" />
-                관리자용 좌석 이용 기록
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                누적 이용 시간: <span className="font-bold text-primary">{Math.floor(totalUsageMinutes)}분</span>
-              </p>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="max-h-96 overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 sticky top-0">
-                    <tr>
-                      <th className="px-6 py-3 text-left font-semibold text-primary">작업</th>
-                      <th className="px-6 py-3 text-left font-semibold text-primary">시간</th>
+        <Card className="shadow-sm border-border bg-white overflow-hidden">
+          <CardHeader className="border-b bg-muted/30">
+            <CardTitle className="flex items-center gap-2 text-primary">
+              <History className="w-5 h-5 text-accent" />
+              이용 기록
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              누적 이용 시간: <span className="font-bold text-primary">{Math.floor(totalUsageMinutes)}분</span>
+            </p>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="max-h-96 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 sticky top-0">
+                  <tr>
+                    <th className="px-6 py-3 text-left font-semibold text-primary">작업</th>
+                    <th className="px-6 py-3 text-left font-semibold text-primary">시간</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {logs.map((log) => (
+                    <tr key={log.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-6 py-4">
+                        <Badge 
+                          className={cn(
+                            "border-none",
+                            log.action === 'IN' ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {log.action === 'IN' ? '입실' : '퇴실'}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 text-muted-foreground tabular-nums">
+                        {format(new Date(log.timestamp), 'yyyy-MM-dd HH:mm:ss')}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {logs.map((log) => (
-                      <tr key={log.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-6 py-4">
-                          <Badge 
-                            className={cn(
-                              "border-none",
-                              log.action === 'IN' ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground"
-                            )}
-                          >
-                            {log.action === 'IN' ? '입실' : '퇴실'}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 text-muted-foreground tabular-nums">
-                          {format(new Date(log.timestamp), 'yyyy-MM-dd HH:mm:ss')}
-                        </td>
-                      </tr>
-                    ))}
-                    {logs.length === 0 && (
-                      <tr>
-                        <td colSpan={2} className="px-6 py-12 text-center text-muted-foreground italic">
-                          이용 기록이 없습니다.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  ))}
+                  {logs.length === 0 && (
+                    <tr>
+                      <td colSpan={2} className="px-6 py-12 text-center text-muted-foreground italic">
+                        이용 기록이 없습니다.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

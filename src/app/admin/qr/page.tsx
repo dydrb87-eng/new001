@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -49,10 +48,10 @@ export default function SeatQRPage() {
         <div className="text-center space-y-2 mb-8 print:mb-4">
           <h1 className="text-3xl font-black text-primary flex items-center justify-center gap-3">
             <QrCode className="w-8 h-8 text-accent" />
-            좌석별 입실/퇴실 QR 코드
+            자리별 입실/퇴실 QR 코드
           </h1>
           <p className="text-muted-foreground font-medium">
-            이 페이지를 인쇄하여 각 좌석에 부착해 주세요.
+            이 페이지를 인쇄하여 각 자리에 부착해 주세요.
           </p>
         </div>
 
@@ -61,7 +60,7 @@ export default function SeatQRPage() {
             <Card key={seat.id} className="border-2 border-dashed border-muted-foreground/30 shadow-none overflow-hidden print:border-solid print:border-gray-300">
               <CardContent className="p-6 flex flex-col items-center justify-center space-y-4">
                 <div className="text-4xl font-black text-primary border-b-4 border-accent pb-1 w-full text-center">
-                  SEAT {seat.id}
+                  SPOT {seat.id}
                 </div>
                 <div className="bg-white p-2 rounded-lg shadow-sm border border-muted">
                   <QRCodeSVG value={`${baseUrl}/seat/${seat.id}`} size={160} />
