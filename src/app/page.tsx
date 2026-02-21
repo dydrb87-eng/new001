@@ -6,9 +6,10 @@ import { SeatData } from '@/lib/types';
 import { SeatCard } from '@/components/SeatCard';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { LayoutGrid, ShieldCheck, RefreshCcw } from 'lucide-react';
+import { LayoutGrid, ShieldCheck, RefreshCcw, TableProperties } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { resetAll } from '@/lib/seat-store';
+import Link from 'next/link';
 
 export default function LibraryDashboard() {
   const [seats, setSeats] = useState<SeatData[]>([]);
@@ -56,15 +57,23 @@ export default function LibraryDashboard() {
               </Label>
             </div>
             {isAdmin && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleReset}
-                className="text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/5"
-              >
-                <RefreshCcw className="w-3 h-3 mr-2" />
-                데이터 초기화
-              </Button>
+              <div className="flex items-center gap-2">
+                <Link href="/admin/management">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <TableProperties className="w-4 h-4" />
+                    전체 자리 관리
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleReset}
+                  className="text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/5"
+                >
+                  <RefreshCcw className="w-3 h-3 mr-2" />
+                  데이터 초기화
+                </Button>
+              </div>
             )}
           </div>
         </header>
