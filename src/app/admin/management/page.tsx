@@ -180,7 +180,7 @@ export default function GlobalManagementPage() {
                         </div>
                       </TableCell>
                       <TableCell className="p-4">
-                        <ScrollArea className="w-full whitespace-nowrap pb-4">
+                        <scrollArea className="w-full whitespace-nowrap pb-4">
                           <div className="flex items-center gap-3">
                             {seatLogsMap[seat.id]?.length > 0 ? (
                               seatLogsMap[seat.id].map((log) => (
@@ -210,7 +210,7 @@ export default function GlobalManagementPage() {
                             )}
                           </div>
                           <ScrollBar orientation="horizontal" />
-                        </ScrollArea>
+                        </scrollArea>
                       </TableCell>
                     </TableRow>
                   ))}

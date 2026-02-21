@@ -4,10 +4,11 @@ const SEAT_STORAGE_KEY = 'library_seats_data';
 const LOGS_STORAGE_KEY = 'library_usage_logs';
 const SYNC_EVENT = 'library_store_sync';
 
-// Helper to notify all components in the same tab
 const notifyUpdate = () => {
-  window.dispatchEvent(new Event(SYNC_EVENT));
-  window.dispatchEvent(new Event('storage')); // For multi-tab support
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(SYNC_EVENT));
+    window.dispatchEvent(new Event('storage'));
+  }
 };
 
 export function getSeats(): SeatData[] {
@@ -22,7 +23,6 @@ export function getSeats(): SeatData[] {
     }
   }
   
-  // Initialize seats 1 to 20
   const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
     id: i + 1,
     status: 'OUT',
@@ -60,7 +60,6 @@ export function batchUpdateStatus(status: SeatStatus) {
   const now = new Date().toISOString();
   
   const updatedSeats = seats.map(seat => {
-    // Only log if status is actually changing
     if (seat.status !== status) {
       const log: SeatLog = {
         id: Math.random().toString(36).substring(2, 11) + Date.now(),
@@ -69,8 +68,9 @@ export function batchUpdateStatus(status: SeatStatus) {
         timestamp: now,
       };
       allLogs.push(log);
+      return { ...seat, status };
     }
-    return { ...seat, status };
+    return seat;
   });
 
   localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(updatedSeats));
@@ -113,7 +113,6 @@ export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: str
 export function resetAll() {
   localStorage.removeItem(SEAT_STORAGE_KEY);
   localStorage.removeItem(LOGS_STORAGE_KEY);
-  // Re-initialize to ensure fresh state
   getSeats(); 
   notifyUpdate();
 }
