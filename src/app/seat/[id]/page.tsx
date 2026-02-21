@@ -6,7 +6,7 @@ import { toggleSeat, getSeatLogs } from '@/lib/seat-store';
 import { SeatLog, SeatStatus } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ChevronLeft, Clock, History, UserCheck, UserX, ArrowLeftRight } from 'lucide-react';
+import { Clock, History, UserCheck, UserX, ArrowLeftRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -44,13 +44,13 @@ export default function SeatDetailPage() {
   return (
     <div className="min-h-screen bg-background p-6 md:p-12">
       <div className="max-w-2xl mx-auto space-y-8">
+        {/* 숨겨진 뒤로가기 버튼: 여백처럼 보이게 처리 */}
         <Button 
           variant="ghost" 
           onClick={() => router.push('/')}
-          className="group hover:bg-white"
+          className="w-10 h-10 p-0 text-transparent bg-transparent hover:bg-transparent border-none shadow-none focus-visible:ring-0 cursor-default select-none"
         >
-          <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-          자리 현황으로 돌아가기
+          .
         </Button>
 
         <Card className="shadow-lg border-2 border-white animate-check-in">
