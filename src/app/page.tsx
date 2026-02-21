@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getSeats, batchUpdateStatus } from '@/lib/seat-store';
 import { SeatData } from '@/lib/types';
 import { SeatCard } from '@/components/SeatCard';
@@ -16,27 +16,29 @@ export default function LibraryDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  const refreshSeats = () => {
+  const refreshSeats = useCallback(() => {
     setSeats(getSeats());
-  };
+  }, []);
 
   useEffect(() => {
     refreshSeats();
     setMounted(true);
 
-    // Listen for storage changes to stay in sync
-    const handleStorageChange = () => {
-      refreshSeats();
+    const handleSync = () => refreshSeats();
+    
+    window.addEventListener('library_store_sync', handleSync);
+    window.addEventListener('storage', handleSync);
+    
+    return () => {
+      window.removeEventListener('library_store_sync', handleSync);
+      window.removeEventListener('storage', handleSync);
     };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [refreshSeats]);
 
   const handleBatchAction = (status: 'IN' | 'OUT') => {
     const confirmMsg = status === 'IN' ? '모든 자리를 입실 처리하시겠습니까?' : '모든 자리를 퇴실 처리하시겠습니까?';
     if (confirm(confirmMsg)) {
       batchUpdateStatus(status);
-      refreshSeats();
       toast({
         title: "일괄 처리 완료",
         description: `모든 좌석이 ${status === 'IN' ? '입실' : '퇴실'} 상태로 변경되었습니다.`,

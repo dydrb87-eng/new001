@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSeats, getSeatLogs, resetAll, getAllLogs } from '@/lib/seat-store';
 import { SeatData, SeatLog } from '@/lib/types';
@@ -20,7 +20,7 @@ export default function GlobalManagementPage() {
   const [seatLogsMap, setSeatLogsMap] = useState<Record<number, SeatLog[]>>({});
   const [mounted, setMounted] = useState(false);
 
-  const loadData = () => {
+  const loadData = useCallback(() => {
     const allSeats = getSeats();
     setSeats(allSeats);
     
@@ -29,23 +29,25 @@ export default function GlobalManagementPage() {
       logsMap[seat.id] = getSeatLogs(seat.id);
     });
     setSeatLogsMap(logsMap);
-  };
+  }, []);
 
   useEffect(() => {
     loadData();
     setMounted(true);
 
-    const handleStorageChange = () => {
-      loadData();
+    const handleSync = () => loadData();
+    window.addEventListener('library_store_sync', handleSync);
+    window.addEventListener('storage', handleSync);
+    
+    return () => {
+      window.removeEventListener('library_store_sync', handleSync);
+      window.removeEventListener('storage', handleSync);
     };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [loadData]);
 
   const handleReset = () => {
     if (confirm('모든 이용 기록과 좌석 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
       resetAll();
-      loadData();
       toast({
         title: "초기화 완료",
         description: "모든 데이터와 이용 기록이 성공적으로 삭제되었습니다.",
@@ -64,11 +66,11 @@ export default function GlobalManagementPage() {
       return;
     }
 
-    // CSV Header with BOM for Korean support in Excel/Sheets
+    // CSV Header with BOM for Korean support
     let csvContent = "\ufeff"; 
     csvContent += "날짜,시간,자리 번호,사용자,작업(상태)\n";
 
-    // Sort all logs by timestamp ascending for a complete chronological report
+    // Sort all logs by timestamp ascending for chronological report
     const sortedLogs = [...allLogs].sort((a, b) => 
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
@@ -78,10 +80,10 @@ export default function GlobalManagementPage() {
     sortedLogs.forEach(log => {
       const dateStr = format(new Date(log.timestamp), 'yyyy-MM-dd');
       const timeStr = format(new Date(log.timestamp), 'HH:mm:ss');
-      const userName = seatMap[log.seatId] || "-";
+      const userNameAtTime = seatMap[log.seatId] || "-";
       const actionStr = log.action === 'IN' ? '입실' : '퇴실';
       
-      csvContent += `${dateStr},${timeStr},${log.seatId},${userName},${actionStr}\n`;
+      csvContent += `${dateStr},${timeStr},${log.seatId},${userNameAtTime},${actionStr}\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -96,7 +98,7 @@ export default function GlobalManagementPage() {
 
     toast({
       title: "내보내기 완료",
-      description: "모든 이용 기록이 CSV 파일로 다운로드되었습니다. 구글 시트에서 '파일 > 가져오기'를 이용하세요.",
+      description: `총 ${sortedLogs.length}건의 모든 기록이 CSV 파일로 다운로드되었습니다.`,
     });
   };
 
