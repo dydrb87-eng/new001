@@ -5,6 +5,7 @@ export interface SeatLog {
   seatId: number;
   action: SeatStatus;
   timestamp: string;
+  userName?: string;
 }
 
 export interface SeatData {

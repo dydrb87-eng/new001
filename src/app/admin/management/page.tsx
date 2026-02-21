@@ -6,7 +6,7 @@ import { getSeats, getSeatLogs, resetAll, getAllLogs } from '@/lib/seat-store';
 import { SeatData, SeatLog } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ChevronLeft, TableProperties, Clock, UserCheck, UserX, FileSpreadsheet, RefreshCcw } from 'lucide-react';
+import { ChevronLeft, TableProperties, UserCheck, UserX, FileSpreadsheet, RefreshCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -22,7 +22,7 @@ export default function GlobalManagementPage() {
 
   const loadData = useCallback(() => {
     const allSeats = getSeats();
-    setSeats(allSeats);
+    setSeats([...allSeats]);
     
     const logsMap: Record<number, SeatLog[]> = {};
     allSeats.forEach(seat => {
@@ -46,9 +46,8 @@ export default function GlobalManagementPage() {
   }, [loadData]);
 
   const handleReset = () => {
-    if (confirm('모든 이용 기록과 좌석 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+    if (confirm('모든 이용 기록을 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
       resetAll();
-      loadData(); // Force reload UI
       toast({
         title: "초기화 완료",
         description: "모든 데이터와 이용 기록이 성공적으로 삭제되었습니다.",
@@ -67,25 +66,20 @@ export default function GlobalManagementPage() {
       return;
     }
 
-    // CSV Header with BOM for Korean support
     let csvContent = "\ufeff"; 
     csvContent += "날짜,시간,자리 번호,사용자,작업(상태)\n";
 
-    // Sort all logs by timestamp ascending for chronological report
     const sortedLogs = [...allLogs].sort((a, b) => 
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    // Map seat ID to user name for the log record
-    const seatUserMap = Object.fromEntries(seats.map(s => [s.id, s.userName || ""]));
-
     sortedLogs.forEach(log => {
       const dateStr = format(new Date(log.timestamp), 'yyyy-MM-dd');
       const timeStr = format(new Date(log.timestamp), 'HH:mm:ss');
-      const userNameAtTime = seatUserMap[log.seatId] || "-";
       const actionStr = log.action === 'IN' ? '입실' : '퇴실';
+      const userName = log.userName || "-";
       
-      csvContent += `${dateStr},${timeStr},${log.seatId},${userNameAtTime},${actionStr}\n`;
+      csvContent += `${dateStr},${timeStr},${log.seatId},"${userName}",${actionStr}\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -100,7 +94,7 @@ export default function GlobalManagementPage() {
 
     toast({
       title: "내보내기 완료",
-      description: `총 ${sortedLogs.length}건의 모든 기록이 CSV 파일로 다운로드되었습니다.`,
+      description: `총 ${sortedLogs.length}건의 전체 기록이 추출되었습니다.`,
     });
   };
 

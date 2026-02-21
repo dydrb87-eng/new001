@@ -6,9 +6,7 @@ const SYNC_EVENT = 'library_store_sync';
 
 const notifyUpdate = () => {
   if (typeof window !== 'undefined') {
-    // Dispatch a custom event for local listeners
     window.dispatchEvent(new CustomEvent(SYNC_EVENT));
-    // Dispatch a storage event for listeners in other components
     window.dispatchEvent(new Event('storage'));
   }
 };
@@ -25,7 +23,6 @@ export function getSeats(): SeatData[] {
     }
   }
   
-  // Initial 20 seats
   const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
     id: i + 1,
     status: 'OUT',
@@ -71,6 +68,7 @@ export function batchUpdateStatus(status: SeatStatus) {
         seatId: seat.id,
         action: status,
         timestamp: now,
+        userName: seat.userName || "",
       };
       allLogs.push(log);
       return { ...seat, status };
@@ -98,7 +96,8 @@ export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: str
   if (seatIndex === -1) throw new Error('Seat not found');
 
   const now = new Date().toISOString();
-  const newStatus: SeatStatus = seats[seatIndex].status === 'IN' ? 'OUT' : 'IN';
+  const currentSeat = seats[seatIndex];
+  const newStatus: SeatStatus = currentSeat.status === 'IN' ? 'OUT' : 'IN';
   
   seats[seatIndex].status = newStatus;
   localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(seats));
@@ -109,6 +108,7 @@ export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: str
     seatId,
     action: newStatus,
     timestamp: now,
+    userName: currentSeat.userName || "",
   };
   allLogs.push(log);
   localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(allLogs));
@@ -120,7 +120,12 @@ export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: str
 export function resetAll() {
   localStorage.removeItem(SEAT_STORAGE_KEY);
   localStorage.removeItem(LOGS_STORAGE_KEY);
-  // Re-init empty data
-  getSeats(); 
+  const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
+    id: i + 1,
+    status: 'OUT',
+    userName: '',
+  }));
+  localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(initialSeats));
+  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify([]));
   notifyUpdate();
 }
