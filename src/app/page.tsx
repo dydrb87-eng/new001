@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -6,7 +7,7 @@ import { SeatData } from '@/lib/types';
 import { SeatCard } from '@/components/SeatCard';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { LayoutGrid, ShieldCheck, RefreshCcw, TableProperties } from 'lucide-react';
+import { LayoutGrid, ShieldCheck, RefreshCcw, TableProperties, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { resetAll } from '@/lib/seat-store';
 import Link from 'next/link';
@@ -62,6 +63,12 @@ export default function LibraryDashboard() {
                   <Button variant="outline" size="sm" className="gap-2">
                     <TableProperties className="w-4 h-4" />
                     전체 자리 관리
+                  </Button>
+                </Link>
+                <Link href="/admin/qr">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <QrCode className="w-4 h-4" />
+                    QR 코드 관리
                   </Button>
                 </Link>
                 <Button 
