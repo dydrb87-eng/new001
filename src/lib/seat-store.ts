@@ -36,9 +36,15 @@ export function batchUpdateStatus(status: SeatStatus) {
   const seats = getSeats();
   const now = new Date().toISOString();
   
-  // Get existing logs to append to them
+  let allLogs: SeatLog[] = [];
   const storedLogs = localStorage.getItem(LOGS_STORAGE_KEY);
-  const allLogs: SeatLog[] = storedLogs ? JSON.parse(storedLogs) : [];
+  if (storedLogs) {
+    try {
+      allLogs = JSON.parse(storedLogs);
+    } catch (e) {
+      allLogs = [];
+    }
+  }
 
   const updatedSeats = seats.map(seat => {
     if (seat.status !== status) {
@@ -105,8 +111,15 @@ export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: str
     timestamp: now,
   };
 
+  let allLogs: SeatLog[] = [];
   const storedLogs = localStorage.getItem(LOGS_STORAGE_KEY);
-  const allLogs: SeatLog[] = storedLogs ? JSON.parse(storedLogs) : [];
+  if (storedLogs) {
+    try {
+      allLogs = JSON.parse(storedLogs);
+    } catch (e) {
+      allLogs = [];
+    }
+  }
   allLogs.push(log);
   localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(allLogs));
 
@@ -116,4 +129,6 @@ export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: str
 export function resetAll() {
   localStorage.removeItem(SEAT_STORAGE_KEY);
   localStorage.removeItem(LOGS_STORAGE_KEY);
+  // Re-initialize to ensure fresh state
+  getSeats();
 }

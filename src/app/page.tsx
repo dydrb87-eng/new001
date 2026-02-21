@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -101,7 +100,7 @@ export default function LibraryDashboard() {
                   <Link href="/admin/management">
                     <Button variant="ghost" size="sm" className="gap-2 text-primary font-bold">
                       <TableProperties className="w-4 h-4" />
-                      전체 자리 관리
+                      이용 기록
                     </Button>
                   </Link>
                   <Link href="/admin/qr">

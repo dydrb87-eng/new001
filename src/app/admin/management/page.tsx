@@ -26,7 +26,6 @@ export default function GlobalManagementPage() {
     
     const logsMap: Record<number, SeatLog[]> = {};
     allSeats.forEach(seat => {
-      // Get all logs and sort by newest first for the UI display
       logsMap[seat.id] = getSeatLogs(seat.id);
     });
     setSeatLogsMap(logsMap);
@@ -43,7 +42,7 @@ export default function GlobalManagementPage() {
       loadData();
       toast({
         title: "초기화 완료",
-        description: "모든 데이터가 성공적으로 삭제되었습니다.",
+        description: "모든 데이터와 이용 기록이 성공적으로 삭제되었습니다.",
       });
     }
   };
@@ -59,11 +58,11 @@ export default function GlobalManagementPage() {
       return;
     }
 
-    // CSV Header with BOM for Excel/Google Sheets Korean support
+    // CSV Header with BOM for Korean support in Excel/Sheets
     let csvContent = "\ufeff"; 
     csvContent += "날짜,시간,자리 번호,사용자,작업(상태)\n";
 
-    // Sort all logs by timestamp ascending for a chronological report
+    // Sort all logs by timestamp ascending for a complete chronological report
     const sortedLogs = [...allLogs].sort((a, b) => 
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
@@ -91,7 +90,7 @@ export default function GlobalManagementPage() {
 
     toast({
       title: "내보내기 완료",
-      description: "모든 과거 이용 기록이 CSV 파일로 다운로드되었습니다. 구글 시트에서 '파일 > 가져오기'를 이용하세요.",
+      description: "모든 이용 기록이 CSV 파일로 다운로드되었습니다. 구글 시트에서 '파일 > 가져오기'를 이용하세요.",
     });
   };
 
@@ -136,7 +135,7 @@ export default function GlobalManagementPage() {
               <div className="space-y-1">
                 <CardTitle className="text-3xl font-black flex items-center gap-3">
                   <TableProperties className="w-8 h-8 text-accent" />
-                  전체 자리 관리
+                  이용 기록
                 </CardTitle>
                 <p className="text-primary-foreground/70 font-medium">
                   모든 좌석의 입/퇴실 기록을 타임라인 형식으로 확인하세요.
