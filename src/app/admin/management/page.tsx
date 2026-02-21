@@ -48,6 +48,7 @@ export default function GlobalManagementPage() {
   const handleReset = () => {
     if (confirm('모든 이용 기록과 좌석 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
       resetAll();
+      loadData(); // Force reload UI
       toast({
         title: "초기화 완료",
         description: "모든 데이터와 이용 기록이 성공적으로 삭제되었습니다.",
@@ -75,12 +76,13 @@ export default function GlobalManagementPage() {
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    const seatMap = Object.fromEntries(seats.map(s => [s.id, s.userName || ""]));
+    // Map seat ID to user name for the log record
+    const seatUserMap = Object.fromEntries(seats.map(s => [s.id, s.userName || ""]));
 
     sortedLogs.forEach(log => {
       const dateStr = format(new Date(log.timestamp), 'yyyy-MM-dd');
       const timeStr = format(new Date(log.timestamp), 'HH:mm:ss');
-      const userNameAtTime = seatMap[log.seatId] || "-";
+      const userNameAtTime = seatUserMap[log.seatId] || "-";
       const actionStr = log.action === 'IN' ? '입실' : '퇴실';
       
       csvContent += `${dateStr},${timeStr},${log.seatId},${userNameAtTime},${actionStr}\n`;
@@ -180,7 +182,7 @@ export default function GlobalManagementPage() {
                         </div>
                       </TableCell>
                       <TableCell className="p-4">
-                        <scrollArea className="w-full whitespace-nowrap pb-4">
+                        <ScrollArea className="w-full whitespace-nowrap pb-4">
                           <div className="flex items-center gap-3">
                             {seatLogsMap[seat.id]?.length > 0 ? (
                               seatLogsMap[seat.id].map((log) => (
@@ -210,7 +212,7 @@ export default function GlobalManagementPage() {
                             )}
                           </div>
                           <ScrollBar orientation="horizontal" />
-                        </scrollArea>
+                        </ScrollArea>
                       </TableCell>
                     </TableRow>
                   ))}

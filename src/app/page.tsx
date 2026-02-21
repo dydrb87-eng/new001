@@ -24,7 +24,9 @@ export default function LibraryDashboard() {
     refreshSeats();
     setMounted(true);
 
-    const handleSync = () => refreshSeats();
+    const handleSync = () => {
+      refreshSeats();
+    };
     
     window.addEventListener('library_store_sync', handleSync);
     window.addEventListener('storage', handleSync);
@@ -39,6 +41,7 @@ export default function LibraryDashboard() {
     const confirmMsg = status === 'IN' ? '모든 자리를 입실 처리하시겠습니까?' : '모든 자리를 퇴실 처리하시겠습니까?';
     if (confirm(confirmMsg)) {
       batchUpdateStatus(status);
+      refreshSeats(); // Force immediate refresh
       toast({
         title: "일괄 처리 완료",
         description: `모든 좌석이 ${status === 'IN' ? '입실' : '퇴실'} 상태로 변경되었습니다.`,

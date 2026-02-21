@@ -6,7 +6,9 @@ const SYNC_EVENT = 'library_store_sync';
 
 const notifyUpdate = () => {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event(SYNC_EVENT));
+    // Dispatch a custom event for local listeners
+    window.dispatchEvent(new CustomEvent(SYNC_EVENT));
+    // Dispatch a storage event for listeners in other components
     window.dispatchEvent(new Event('storage'));
   }
 };
@@ -23,6 +25,7 @@ export function getSeats(): SeatData[] {
     }
   }
   
+  // Initial 20 seats
   const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
     id: i + 1,
     status: 'OUT',
@@ -59,8 +62,10 @@ export function batchUpdateStatus(status: SeatStatus) {
   const allLogs = getAllLogs();
   const now = new Date().toISOString();
   
+  let changed = false;
   const updatedSeats = seats.map(seat => {
     if (seat.status !== status) {
+      changed = true;
       const log: SeatLog = {
         id: Math.random().toString(36).substring(2, 11) + Date.now(),
         seatId: seat.id,
@@ -73,9 +78,11 @@ export function batchUpdateStatus(status: SeatStatus) {
     return seat;
   });
 
-  localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(updatedSeats));
-  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(allLogs));
-  notifyUpdate();
+  if (changed) {
+    localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(updatedSeats));
+    localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(allLogs));
+    notifyUpdate();
+  }
 }
 
 export function getSeatLogs(seatId: number): SeatLog[] {
@@ -113,6 +120,7 @@ export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: str
 export function resetAll() {
   localStorage.removeItem(SEAT_STORAGE_KEY);
   localStorage.removeItem(LOGS_STORAGE_KEY);
+  // Re-init empty data
   getSeats(); 
   notifyUpdate();
 }
