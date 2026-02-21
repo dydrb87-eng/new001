@@ -53,7 +53,6 @@ export function saveLogs(logs: SeatLog[]) {
   localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
 }
 
-// 특정 좌석의 로그만 필터링해서 가져오기 (수정됨)
 export function getSeatLogs(seatId: number): SeatLog[] {
   const logs = getLogs();
   return logs
@@ -71,6 +70,8 @@ export function updateSeatUser(seatId: number, userName: string) {
 }
 
 export function batchUpdateStatus(status: SeatStatus) {
+  if (typeof window === 'undefined') return false;
+  
   const seats = getSeats();
   const logs = getLogs();
   const now = new Date().toISOString();
@@ -92,8 +93,9 @@ export function batchUpdateStatus(status: SeatStatus) {
   });
 
   if (changed) {
-    saveLogs(logs); // 로그 먼저 저장
-    saveSeats(updatedSeats); // saveSeats 내부에서 notifyUpdate() 호출
+    localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
+    localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(updatedSeats));
+    notifyUpdate();
     return true;
   }
   return false;
@@ -118,23 +120,24 @@ export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: str
     userName: seats[index].userName || "",
   });
 
-  saveLogs(logs);
+  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
   saveSeats(seats);
   
   return { action: newStatus, timestamp: now };
 }
 
 export function resetAll() {
+  if (typeof window === 'undefined') return;
+  
   const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
     id: i + 1,
     status: 'OUT',
     userName: '',
   }));
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(initialSeats));
-    localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify([]));
-    notifyUpdate();
-  }
+  
+  localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(initialSeats));
+  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify([]));
+  notifyUpdate();
 }
 
 export function exportLogsToCSV() {

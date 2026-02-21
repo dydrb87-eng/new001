@@ -25,13 +25,16 @@ export default function LibraryDashboard() {
     setMounted(true);
     refresh();
 
-    const handleSync = () => refresh();
+    const handleSync = () => {
+      console.log('Sync event received');
+      refresh();
+    };
     window.addEventListener('library_store_sync', handleSync);
     return () => window.removeEventListener('library_store_sync', handleSync);
   }, [refresh]);
 
   const handleBatch = (status: 'IN' | 'OUT') => {
-    const msg = status === 'IN' ? '모든 자리를 입실 처리하시겠습니까?' : '모든 자리를 퇴실 처리하시겠습니까?';
+    const msg = status === 'IN' ? '모든 퇴실 자리를 입실 처리하시겠습니까?' : '모든 입실 자리를 퇴실 처리하시겠습니까?';
     if (window.confirm(msg)) {
       const success = batchUpdateStatus(status);
       if (success) {
@@ -40,7 +43,7 @@ export default function LibraryDashboard() {
           description: `모든 좌석이 ${status === 'IN' ? '입실' : '퇴실'} 상태로 변경되었습니다.`,
         });
       } else {
-        toast({ description: "이미 모든 좌석이 해당 상태입니다." });
+        toast({ description: "변경할 좌석이 없습니다." });
       }
     }
   };
