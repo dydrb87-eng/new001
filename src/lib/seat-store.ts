@@ -4,6 +4,7 @@ const SEAT_STORAGE_KEY = 'library_seats_data';
 const LOGS_STORAGE_KEY = 'library_usage_logs';
 const SYNC_EVENT = 'library_store_sync';
 
+// 공통: 변경 사항 알림 및 이벤트 발생
 const notifyUpdate = () => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(SYNC_EVENT));
@@ -54,15 +55,17 @@ export function getAllLogs(): SeatLog[] {
   }
 }
 
+// 핵심 수정: 일괄 상태 업데이트 로직 보강
 export function batchUpdateStatus(status: SeatStatus) {
   const seats = getSeats();
   const allLogs = getAllLogs();
   const now = new Date().toISOString();
   
-  let changed = false;
+  let changedCount = 0;
   const updatedSeats = seats.map(seat => {
+    // 이미 해당 상태인 경우는 건너뛰고 다른 경우만 변경
     if (seat.status !== status) {
-      changed = true;
+      changedCount++;
       const log: SeatLog = {
         id: Math.random().toString(36).substring(2, 11) + Date.now(),
         seatId: seat.id,
@@ -76,11 +79,12 @@ export function batchUpdateStatus(status: SeatStatus) {
     return seat;
   });
 
-  if (changed) {
+  if (changedCount > 0) {
     localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(updatedSeats));
     localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(allLogs));
     notifyUpdate();
   }
+  return changedCount > 0;
 }
 
 export function getSeatLogs(seatId: number): SeatLog[] {
@@ -117,9 +121,8 @@ export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: str
   return { action: newStatus, timestamp: now };
 }
 
+// 핵심 수정: 데이터 초기화 로직 보강
 export function resetAll() {
-  localStorage.removeItem(SEAT_STORAGE_KEY);
-  localStorage.removeItem(LOGS_STORAGE_KEY);
   const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
     id: i + 1,
     status: 'OUT',
@@ -128,4 +131,5 @@ export function resetAll() {
   localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(initialSeats));
   localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify([]));
   notifyUpdate();
+  return true;
 }

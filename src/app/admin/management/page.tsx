@@ -46,8 +46,9 @@ export default function GlobalManagementPage() {
   }, [loadData]);
 
   const handleReset = () => {
-    if (confirm('모든 이용 기록을 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+    if (confirm('모든 이용 기록과 사용자 설정을 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
       resetAll();
+      loadData(); // 즉시 화면 갱신
       toast({
         title: "초기화 완료",
         description: "모든 데이터와 이용 기록이 성공적으로 삭제되었습니다.",
@@ -66,9 +67,11 @@ export default function GlobalManagementPage() {
       return;
     }
 
+    // CSV 헤더 설정 (BOM 추가로 한글 깨짐 방지)
     let csvContent = "\ufeff"; 
     csvContent += "날짜,시간,자리 번호,사용자,작업(상태)\n";
 
+    // 모든 로그를 시간순(오래된 순)으로 정렬하여 추출
     const sortedLogs = [...allLogs].sort((a, b) => 
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
@@ -94,7 +97,7 @@ export default function GlobalManagementPage() {
 
     toast({
       title: "내보내기 완료",
-      description: `총 ${sortedLogs.length}건의 전체 기록이 추출되었습니다.`,
+      description: `총 ${sortedLogs.length}건의 모든 기록이 추출되었습니다.`,
     });
   };
 

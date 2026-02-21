@@ -41,12 +41,18 @@ export default function LibraryDashboard() {
   const handleBatchAction = (status: 'IN' | 'OUT') => {
     const confirmMsg = status === 'IN' ? '모든 자리를 입실 처리하시겠습니까?' : '모든 자리를 퇴실 처리하시겠습니까?';
     if (confirm(confirmMsg)) {
-      batchUpdateStatus(status);
-      // batchUpdateStatus internally calls notifyUpdate which triggers refreshSeats via the event listener
-      toast({
-        title: "일괄 처리 완료",
-        description: `모든 좌석이 ${status === 'IN' ? '입실' : '퇴실'} 상태로 변경되었습니다.`,
-      });
+      const success = batchUpdateStatus(status);
+      if (success) {
+        refreshSeats(); // 즉시 화면 갱신
+        toast({
+          title: "일괄 처리 완료",
+          description: `모든 좌석이 ${status === 'IN' ? '입실' : '퇴실'} 상태로 변경되었습니다.`,
+        });
+      } else {
+        toast({
+          description: "이미 모든 좌석이 해당 상태입니다.",
+        });
+      }
     }
   };
 
