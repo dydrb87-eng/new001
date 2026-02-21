@@ -1,13 +1,11 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { SeatData } from '@/lib/types';
-import { UserCheck, UserX, QrCode } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { UserCheck, UserX } from 'lucide-react';
 
 interface SeatCardProps {
   seat: SeatData;
@@ -16,28 +14,20 @@ interface SeatCardProps {
 
 export function SeatCard({ seat, isAdmin }: SeatCardProps) {
   const isOccupied = seat.status === 'IN';
-  const [baseUrl, setBaseUrl] = useState('');
-
-  useEffect(() => {
-    setBaseUrl(window.location.origin);
-  }, []);
-
-  const qrUrl = `${baseUrl}/seat/${seat.id}`;
 
   return (
     <Link href={`/seat/${seat.id}?admin=${isAdmin}`}>
       <Card className={cn(
-        "relative flex flex-col items-center justify-center p-6 h-40 transition-all hover:shadow-md hover:-translate-y-1 cursor-pointer border-2",
+        "relative flex flex-col items-center justify-center p-6 h-44 transition-all hover:shadow-md hover:-translate-y-1 cursor-pointer border-2",
         isOccupied 
           ? "bg-[hsl(var(--success))] text-white border-[hsl(var(--success))]" 
-          : "bg-[hsl(var(--destructive))] text-white border-[hsl(var(--destructive))]"
+          : "bg-slate-400 text-white border-slate-400"
       )}>
-        {/* QR Code in Top Left */}
-        <div className="absolute top-2 left-2 bg-white p-1 rounded-sm shadow-sm overflow-hidden">
-          <QRCodeSVG value={qrUrl} size={32} />
+        <span className="text-4xl font-black mb-1">{seat.id}</span>
+        
+        <div className="text-sm font-bold mb-3 h-5 flex items-center justify-center opacity-90">
+          {seat.userName || "-"}
         </div>
-
-        <span className="text-4xl font-black mb-2">{seat.id}</span>
         
         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm">
           {isOccupied ? (

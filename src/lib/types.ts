@@ -10,4 +10,5 @@ export interface SeatLog {
 export interface SeatData {
   id: number;
   status: SeatStatus;
+  userName?: string;
 }

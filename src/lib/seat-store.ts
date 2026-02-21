@@ -13,9 +13,19 @@ export function getSeats(): SeatData[] {
   const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
     id: i + 1,
     status: 'OUT',
+    userName: '',
   }));
   localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(initialSeats));
   return initialSeats;
+}
+
+export function updateSeatUser(seatId: number, userName: string) {
+  const seats = getSeats();
+  const seatIndex = seats.findIndex(s => s.id === seatId);
+  if (seatIndex !== -1) {
+    seats[seatIndex].userName = userName;
+    localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(seats));
+  }
 }
 
 export function getSeatLogs(seatId: number): SeatLog[] {

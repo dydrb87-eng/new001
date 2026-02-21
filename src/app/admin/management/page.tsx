@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -25,7 +26,7 @@ export default function GlobalManagementPage() {
     
     const logsMap: Record<number, SeatLog[]> = {};
     allSeats.forEach(seat => {
-      logsMap[seat.id] = getSeatLogs(seat.id).reverse(); // 시간순으로 정렬 (오래된 순 -> 최신 순)
+      logsMap[seat.id] = getSeatLogs(seat.id).reverse();
     });
     setSeatLogsMap(logsMap);
     setMounted(true);
@@ -63,7 +64,7 @@ export default function GlobalManagementPage() {
                   <span>입실 (IN)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[hsl(var(--destructive))]" />
+                  <div className="w-3 h-3 rounded-full bg-slate-400" />
                   <span>퇴실 (OUT)</span>
                 </div>
               </div>
@@ -74,15 +75,18 @@ export default function GlobalManagementPage() {
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead className="w-24 text-center font-bold text-primary border-r">자리 번호</TableHead>
+                    <TableHead className="w-32 text-center font-bold text-primary border-r">자리 / 사용자</TableHead>
                     <TableHead className="px-6 font-bold text-primary">이용 기록 (타임라인)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {seats.map((seat) => (
                     <TableRow key={seat.id} className="hover:bg-muted/20 transition-colors">
-                      <TableCell className="text-center font-black text-2xl text-primary border-r bg-muted/5">
-                        {seat.id}
+                      <TableCell className="text-center border-r bg-muted/5 p-4">
+                        <div className="font-black text-2xl text-primary">{seat.id}</div>
+                        <div className="text-xs font-bold text-muted-foreground mt-1 truncate max-w-[100px] mx-auto">
+                          {seat.userName || "-"}
+                        </div>
                       </TableCell>
                       <TableCell className="p-4">
                         <ScrollArea className="w-full whitespace-nowrap pb-4">
@@ -95,7 +99,7 @@ export default function GlobalManagementPage() {
                                       "px-3 py-1.5 border-none shadow-sm transition-transform group-hover:scale-110",
                                       log.action === 'IN' 
                                         ? "bg-[hsl(var(--success))] text-white" 
-                                        : "bg-[hsl(var(--destructive))] text-white"
+                                        : "bg-slate-400 text-white"
                                     )}
                                   >
                                     {log.action === 'IN' ? (

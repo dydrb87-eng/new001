@@ -7,7 +7,7 @@ import { SeatData } from '@/lib/types';
 import { SeatCard } from '@/components/SeatCard';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { LayoutGrid, ShieldCheck, RefreshCcw, TableProperties, QrCode } from 'lucide-react';
+import { LayoutGrid, ShieldCheck, RefreshCcw, TableProperties, QrCode, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { resetAll } from '@/lib/seat-store';
 import Link from 'next/link';
@@ -59,6 +59,12 @@ export default function LibraryDashboard() {
             </div>
             {isAdmin && (
               <div className="flex items-center gap-2">
+                <Link href="/admin/users">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Users className="w-4 h-4" />
+                    사용자 관리
+                  </Button>
+                </Link>
                 <Link href="/admin/management">
                   <Button variant="outline" size="sm" className="gap-2">
                     <TableProperties className="w-4 h-4" />
