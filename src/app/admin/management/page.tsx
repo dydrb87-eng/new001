@@ -3,16 +3,17 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSeats, getSeatLogs } from '@/lib/seat-store';
+import { getSeats, getSeatLogs, resetAll } from '@/lib/seat-store';
 import { SeatData, SeatLog } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ChevronLeft, TableProperties, Clock, UserCheck, UserX } from 'lucide-react';
+import { ChevronLeft, TableProperties, Clock, UserCheck, UserX, FileSpreadsheet, RefreshCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { toast } from '@/hooks/use-toast';
 
 export default function GlobalManagementPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function GlobalManagementPage() {
   const [seatLogsMap, setSeatLogsMap] = useState<Record<number, SeatLog[]>>({});
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
+  const loadData = () => {
     const allSeats = getSeats();
     setSeats(allSeats);
     
@@ -29,22 +30,87 @@ export default function GlobalManagementPage() {
       logsMap[seat.id] = getSeatLogs(seat.id).reverse();
     });
     setSeatLogsMap(logsMap);
+  };
+
+  useEffect(() => {
+    loadData();
     setMounted(true);
   }, []);
+
+  const handleReset = () => {
+    if (confirm('모든 이용 기록과 좌석 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      resetAll();
+      loadData();
+      toast({
+        title: "초기화 완료",
+        description: "모든 데이터가 성공적으로 삭제되었습니다.",
+      });
+    }
+  };
+
+  const exportToCsv = () => {
+    // CSV 헤더
+    let csvContent = "\ufeff"; // BOM for Korean characters in Excel
+    csvContent += "자리 번호,사용자,상태,시간\n";
+
+    seats.forEach(seat => {
+      const logs = seatLogsMap[seat.id] || [];
+      logs.forEach(log => {
+        const timeStr = format(new Date(log.timestamp), 'yyyy-MM-dd HH:mm:ss');
+        csvContent += `${seat.id},${seat.userName || "-"},${log.action === 'IN' ? '입실' : '퇴실'},${timeStr}\n`;
+      });
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `library_seat_records_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "내보내기 완료",
+      description: "이용 기록이 CSV 파일로 다운로드되었습니다. 구글 시트에서 열 수 있습니다.",
+    });
+  };
 
   if (!mounted) return null;
 
   return (
     <div className="min-h-screen bg-background p-6 md:p-12">
       <div className="max-w-7xl mx-auto space-y-8">
-        <Button 
-          variant="ghost" 
-          onClick={() => router.push('/')}
-          className="group hover:bg-white"
-        >
-          <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-          대시보드로 돌아가기
-        </Button>
+        <div className="flex items-center justify-between">
+          <Button 
+            variant="ghost" 
+            onClick={() => router.push('/')}
+            className="group hover:bg-white"
+          >
+            <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+            대시보드로 돌아가기
+          </Button>
+
+          <div className="flex gap-3">
+            <Button 
+              variant="outline" 
+              onClick={exportToCsv}
+              className="gap-2 border-primary/20 hover:bg-primary/5 text-primary font-bold"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              구글시트로 정리 (CSV)
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleReset}
+              className="gap-2 text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/5 font-bold"
+            >
+              <RefreshCcw className="w-4 h-4" />
+              데이터 초기화
+            </Button>
+          </div>
+        </div>
 
         <Card className="shadow-lg border-none bg-white overflow-hidden">
           <CardHeader className="bg-primary text-white p-8">

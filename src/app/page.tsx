@@ -2,30 +2,39 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { getSeats } from '@/lib/seat-store';
+import { getSeats, batchUpdateStatus } from '@/lib/seat-store';
 import { SeatData } from '@/lib/types';
 import { SeatCard } from '@/components/SeatCard';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { LayoutGrid, ShieldCheck, RefreshCcw, TableProperties, QrCode, Users } from 'lucide-react';
+import { LayoutGrid, ShieldCheck, UserCheck, UserX, TableProperties, QrCode, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { resetAll } from '@/lib/seat-store';
 import Link from 'next/link';
+import { toast } from '@/hooks/use-toast';
 
 export default function LibraryDashboard() {
   const [seats, setSeats] = useState<SeatData[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
+  const refreshSeats = () => {
     setSeats(getSeats());
+  };
+
+  useEffect(() => {
+    refreshSeats();
     setMounted(true);
   }, []);
 
-  const handleReset = () => {
-    if (confirm('모든 기록을 초기화하시겠습니까?')) {
-      resetAll();
-      setSeats(getSeats());
+  const handleBatchAction = (status: 'IN' | 'OUT') => {
+    const confirmMsg = status === 'IN' ? '모든 자리를 입실 처리하시겠습니까?' : '모든 자리를 퇴실 처리하시겠습니까?';
+    if (confirm(confirmMsg)) {
+      batchUpdateStatus(status);
+      refreshSeats();
+      toast({
+        title: "일괄 처리 완료",
+        description: `모든 좌석이 ${status === 'IN' ? '입실' : '퇴실'} 상태로 변경되었습니다.`,
+      });
     }
   };
 
@@ -45,47 +54,63 @@ export default function LibraryDashboard() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6 bg-white p-4 rounded-xl shadow-sm border border-border">
-            <div className="flex items-center space-x-2">
-              <Switch 
-                id="admin-mode" 
-                checked={isAdmin} 
-                onCheckedChange={setIsAdmin} 
-              />
-              <Label htmlFor="admin-mode" className="flex items-center gap-1.5 cursor-pointer font-semibold text-primary">
-                <ShieldCheck className="w-4 h-4 text-accent" />
-                관리자 모드
-              </Label>
+          <div className="flex flex-col gap-4 bg-white p-4 rounded-xl shadow-sm border border-border">
+            <div className="flex items-center justify-between border-b pb-2 mb-2">
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="admin-mode" 
+                  checked={isAdmin} 
+                  onCheckedChange={setIsAdmin} 
+                />
+                <Label htmlFor="admin-mode" className="flex items-center gap-1.5 cursor-pointer font-semibold text-primary">
+                  <ShieldCheck className="w-4 h-4 text-accent" />
+                  관리자 모드
+                </Label>
+              </div>
             </div>
+            
             {isAdmin && (
-              <div className="flex items-center gap-2">
-                <Link href="/admin/users">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Users className="w-4 h-4" />
-                    사용자 관리
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleBatchAction('IN')}
+                    className="gap-2 bg-[hsl(var(--success))] text-white hover:bg-[hsl(var(--success))]/90 hover:text-white border-none"
+                  >
+                    <UserCheck className="w-4 h-4" />
+                    전체 입실
                   </Button>
-                </Link>
-                <Link href="/admin/management">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <TableProperties className="w-4 h-4" />
-                    전체 자리 관리
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleBatchAction('OUT')}
+                    className="gap-2 bg-slate-500 text-white hover:bg-slate-600 hover:text-white border-none"
+                  >
+                    <UserX className="w-4 h-4" />
+                    전체 퇴실
                   </Button>
-                </Link>
-                <Link href="/admin/qr">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <QrCode className="w-4 h-4" />
-                    QR 코드 관리
-                  </Button>
-                </Link>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleReset}
-                  className="text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/5"
-                >
-                  <RefreshCcw className="w-3 h-3 mr-2" />
-                  데이터 초기화
-                </Button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link href="/admin/users">
+                    <Button variant="ghost" size="sm" className="gap-2 text-primary font-bold">
+                      <Users className="w-4 h-4" />
+                      사용자 관리
+                    </Button>
+                  </Link>
+                  <Link href="/admin/management">
+                    <Button variant="ghost" size="sm" className="gap-2 text-primary font-bold">
+                      <TableProperties className="w-4 h-4" />
+                      전체 자리 관리
+                    </Button>
+                  </Link>
+                  <Link href="/admin/qr">
+                    <Button variant="ghost" size="sm" className="gap-2 text-primary font-bold">
+                      <QrCode className="w-4 h-4" />
+                      QR 코드 관리
+                    </Button>
+                  </Link>
+                </div>
               </div>
             )}
           </div>
