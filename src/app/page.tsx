@@ -9,49 +9,38 @@ import { Label } from '@/components/ui/label';
 import { LayoutGrid, ShieldCheck, UserCheck, UserX, TableProperties, QrCode, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export default function LibraryDashboard() {
   const [seats, setSeats] = useState<SeatData[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { toast } = useToast();
 
-  const refreshSeats = useCallback(() => {
-    const data = getSeats();
-    setSeats([...data]);
+  const refresh = useCallback(() => {
+    setSeats(getSeats());
   }, []);
 
   useEffect(() => {
-    refreshSeats();
     setMounted(true);
+    refresh();
 
-    const handleSync = () => {
-      refreshSeats();
-    };
-    
+    const handleSync = () => refresh();
     window.addEventListener('library_store_sync', handleSync);
-    window.addEventListener('storage', handleSync);
-    
-    return () => {
-      window.removeEventListener('library_store_sync', handleSync);
-      window.removeEventListener('storage', handleSync);
-    };
-  }, [refreshSeats]);
+    return () => window.removeEventListener('library_store_sync', handleSync);
+  }, [refresh]);
 
-  const handleBatchAction = (status: 'IN' | 'OUT') => {
-    const confirmMsg = status === 'IN' ? '모든 자리를 입실 처리하시겠습니까?' : '모든 자리를 퇴실 처리하시겠습니까?';
-    if (confirm(confirmMsg)) {
+  const handleBatch = (status: 'IN' | 'OUT') => {
+    const msg = status === 'IN' ? '모든 자리를 입실 처리하시겠습니까?' : '모든 자리를 퇴실 처리하시겠습니까?';
+    if (window.confirm(msg)) {
       const success = batchUpdateStatus(status);
       if (success) {
-        refreshSeats(); // 즉시 화면 갱신
         toast({
           title: "일괄 처리 완료",
           description: `모든 좌석이 ${status === 'IN' ? '입실' : '퇴실'} 상태로 변경되었습니다.`,
         });
       } else {
-        toast({
-          description: "이미 모든 좌석이 해당 상태입니다.",
-        });
+        toast({ description: "이미 모든 좌석이 해당 상태입니다." });
       }
     }
   };
@@ -67,84 +56,42 @@ export default function LibraryDashboard() {
               <LayoutGrid className="w-10 h-10 text-accent" />
               도서관 좌석 매니저
             </h1>
-            <p className="text-muted-foreground font-medium">
-              도서관 좌석의 실시간 현황을 확인하고 입/퇴실을 관리하세요.
-            </p>
+            <p className="text-muted-foreground font-medium">실시간 좌석 현황을 확인하고 관리하세요.</p>
           </div>
 
           <div className="flex flex-col gap-4 bg-white p-4 rounded-xl shadow-sm border border-border">
-            <div className="flex items-center justify-between border-b pb-2 mb-2">
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  id="admin-mode" 
-                  checked={isAdmin} 
-                  onCheckedChange={setIsAdmin} 
-                />
-                <Label htmlFor="admin-mode" className="flex items-center gap-1.5 cursor-pointer font-semibold text-primary">
-                  <ShieldCheck className="w-4 h-4 text-accent" />
-                  관리자 모드
-                </Label>
-              </div>
+            <div className="flex items-center space-x-2 border-b pb-2">
+              <Switch id="admin-mode" checked={isAdmin} onCheckedChange={setIsAdmin} />
+              <Label htmlFor="admin-mode" className="flex items-center gap-1.5 cursor-pointer font-bold text-primary">
+                <ShieldCheck className="w-4 h-4 text-accent" /> 관리자 모드
+              </Label>
             </div>
             
             {isAdmin && (
               <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleBatchAction('IN')}
-                    className="gap-2 bg-[hsl(var(--success))] text-white hover:bg-[hsl(var(--success))]/90 hover:text-white border-none font-bold"
-                  >
-                    <UserCheck className="w-4 h-4" />
-                    전체 입실
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => handleBatch('IN')} className="bg-[hsl(var(--success))] hover:bg-[hsl(var(--success))]/90 text-white font-bold gap-2">
+                    <UserCheck className="w-4 h-4" /> 전체 입실
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleBatchAction('OUT')}
-                    className="gap-2 bg-slate-500 text-white hover:bg-slate-600 hover:text-white border-none font-bold"
-                  >
-                    <UserX className="w-4 h-4" />
-                    전체 퇴실
+                  <Button size="sm" onClick={() => handleBatch('OUT')} className="bg-slate-500 hover:bg-slate-600 text-white font-bold gap-2">
+                    <UserX className="w-4 h-4" /> 전체 퇴실
                   </Button>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Link href="/admin/users">
-                    <Button variant="ghost" size="sm" className="gap-2 text-primary font-bold">
-                      <Users className="w-4 h-4" />
-                      사용자 관리
-                    </Button>
-                  </Link>
-                  <Link href="/admin/management">
-                    <Button variant="ghost" size="sm" className="gap-2 text-primary font-bold">
-                      <TableProperties className="w-4 h-4" />
-                      이용 기록
-                    </Button>
-                  </Link>
-                  <Link href="/admin/qr">
-                    <Button variant="ghost" size="sm" className="gap-2 text-primary font-bold">
-                      <QrCode className="w-4 h-4" />
-                      QR 코드 관리
-                    </Button>
-                  </Link>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/admin/users"><Button variant="ghost" size="sm" className="font-bold gap-1"><Users className="w-4 h-4"/>사용자 관리</Button></Link>
+                  <Link href="/admin/management"><Button variant="ghost" size="sm" className="font-bold gap-1"><TableProperties className="w-4 h-4"/>이용 기록</Button></Link>
+                  <Link href="/admin/qr"><Button variant="ghost" size="sm" className="font-bold gap-1"><QrCode className="w-4 h-4"/>QR 코드</Button></Link>
                 </div>
               </div>
             )}
           </div>
         </header>
 
-        <main>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {seats.map((seat) => (
-              <SeatCard key={seat.id} seat={seat} isAdmin={isAdmin} />
-            ))}
-          </div>
+        <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {seats.map((seat) => (
+            <SeatCard key={seat.id} seat={seat} isAdmin={isAdmin} />
+          ))}
         </main>
-
-        <footer className="pt-12 text-center text-sm text-muted-foreground border-t border-border/50">
-          <p>© 2024 Library Seat Manager. All rights reserved.</p>
-        </footer>
       </div>
     </div>
   );

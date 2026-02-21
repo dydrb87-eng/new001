@@ -4,11 +4,10 @@ const SEAT_STORAGE_KEY = 'library_seats_data';
 const LOGS_STORAGE_KEY = 'library_usage_logs';
 const SYNC_EVENT = 'library_store_sync';
 
-// 공통: 변경 사항 알림 및 이벤트 발생
-const notifyUpdate = () => {
+// 공통: 변경 사항 알림
+export const notifyUpdate = () => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(SYNC_EVENT));
-    window.dispatchEvent(new Event('storage'));
   }
 };
 
@@ -17,8 +16,7 @@ export function getSeats(): SeatData[] {
   const stored = localStorage.getItem(SEAT_STORAGE_KEY);
   if (stored) {
     try {
-      const data = JSON.parse(stored);
-      if (Array.isArray(data) && data.length > 0) return data;
+      return JSON.parse(stored);
     } catch (e) {
       console.error("Failed to parse seats", e);
     }
@@ -33,103 +31,128 @@ export function getSeats(): SeatData[] {
   return initialSeats;
 }
 
-export function updateSeatUser(seatId: number, userName: string) {
-  const seats = getSeats();
-  const seatIndex = seats.findIndex(s => s.id === seatId);
-  if (seatIndex !== -1) {
-    seats[seatIndex].userName = userName;
-    localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(seats));
-    notifyUpdate();
-  }
+export function saveSeats(seats: SeatData[]) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(seats));
+  notifyUpdate();
 }
 
-export function getAllLogs(): SeatLog[] {
+export function getLogs(): SeatLog[] {
   if (typeof window === 'undefined') return [];
   const stored = localStorage.getItem(LOGS_STORAGE_KEY);
   if (!stored) return [];
   try {
-    const logs = JSON.parse(stored);
-    return Array.isArray(logs) ? logs : [];
+    return JSON.parse(stored);
   } catch (e) {
     return [];
   }
 }
 
-// 핵심 수정: 일괄 상태 업데이트 로직 보강
+export function saveLogs(logs: SeatLog[]) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
+}
+
+export function updateSeatUser(seatId: number, userName: string) {
+  const seats = getSeats();
+  const index = seats.findIndex(s => s.id === seatId);
+  if (index !== -1) {
+    seats[index].userName = userName;
+    saveSeats(seats);
+  }
+}
+
 export function batchUpdateStatus(status: SeatStatus) {
   const seats = getSeats();
-  const allLogs = getAllLogs();
+  const logs = getLogs();
   const now = new Date().toISOString();
   
-  let changedCount = 0;
+  let changed = false;
   const updatedSeats = seats.map(seat => {
-    // 이미 해당 상태인 경우는 건너뛰고 다른 경우만 변경
     if (seat.status !== status) {
-      changedCount++;
-      const log: SeatLog = {
-        id: Math.random().toString(36).substring(2, 11) + Date.now(),
+      changed = true;
+      logs.push({
+        id: Math.random().toString(36).substring(2, 9) + Date.now(),
         seatId: seat.id,
         action: status,
         timestamp: now,
         userName: seat.userName || "",
-      };
-      allLogs.push(log);
+      });
       return { ...seat, status };
     }
     return seat;
   });
 
-  if (changedCount > 0) {
-    localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(updatedSeats));
-    localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(allLogs));
-    notifyUpdate();
+  if (changed) {
+    saveSeats(updatedSeats);
+    saveLogs(logs);
+    return true;
   }
-  return changedCount > 0;
-}
-
-export function getSeatLogs(seatId: number): SeatLog[] {
-  const allLogs = getAllLogs();
-  return allLogs
-    .filter(log => log.seatId === seatId)
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  return false;
 }
 
 export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: string } {
   const seats = getSeats();
-  const seatIndex = seats.findIndex(s => s.id === seatId);
-  if (seatIndex === -1) throw new Error('Seat not found');
+  const logs = getLogs();
+  const index = seats.findIndex(s => s.id === seatId);
+  
+  if (index === -1) throw new Error('Seat not found');
 
   const now = new Date().toISOString();
-  const currentSeat = seats[seatIndex];
-  const newStatus: SeatStatus = currentSeat.status === 'IN' ? 'OUT' : 'IN';
+  const newStatus: SeatStatus = seats[index].status === 'IN' ? 'OUT' : 'IN';
   
-  seats[seatIndex].status = newStatus;
-  localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(seats));
-
-  const allLogs = getAllLogs();
-  const log: SeatLog = {
-    id: Math.random().toString(36).substring(2, 11) + Date.now(),
+  seats[index].status = newStatus;
+  logs.push({
+    id: Math.random().toString(36).substring(2, 9) + Date.now(),
     seatId,
     action: newStatus,
     timestamp: now,
-    userName: currentSeat.userName || "",
-  };
-  allLogs.push(log);
-  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(allLogs));
+    userName: seats[index].userName || "",
+  });
+
+  saveSeats(seats);
+  saveLogs(logs);
   
-  notifyUpdate();
   return { action: newStatus, timestamp: now };
 }
 
-// 핵심 수정: 데이터 초기화 로직 보강
 export function resetAll() {
   const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
     id: i + 1,
     status: 'OUT',
     userName: '',
   }));
-  localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(initialSeats));
-  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify([]));
-  notifyUpdate();
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(initialSeats));
+    localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify([]));
+    notifyUpdate();
+  }
+}
+
+export function exportLogsToCSV() {
+  const logs = getLogs();
+  if (logs.length === 0) return false;
+
+  const sortedLogs = [...logs].sort((a, b) => 
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+
+  let csv = "\ufeff날짜,시간,자리 번호,사용자,상태\n";
+  sortedLogs.forEach(log => {
+    const d = new Date(log.timestamp);
+    const dateStr = d.toLocaleDateString('ko-KR');
+    const timeStr = d.toLocaleTimeString('ko-KR');
+    const actionStr = log.action === 'IN' ? '입실' : '퇴실';
+    csv += `${dateStr},${timeStr},${log.seatId},"${log.userName || ""}",${actionStr}\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `도서관_이용기록_${new Date().getTime()}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
   return true;
 }
