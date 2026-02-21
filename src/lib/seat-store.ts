@@ -53,6 +53,14 @@ export function saveLogs(logs: SeatLog[]) {
   localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
 }
 
+// 특정 좌석의 로그만 필터링해서 가져오기 (수정됨)
+export function getSeatLogs(seatId: number): SeatLog[] {
+  const logs = getLogs();
+  return logs
+    .filter(log => log.seatId === seatId)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+}
+
 export function updateSeatUser(seatId: number, userName: string) {
   const seats = getSeats();
   const index = seats.findIndex(s => s.id === seatId);
@@ -84,8 +92,8 @@ export function batchUpdateStatus(status: SeatStatus) {
   });
 
   if (changed) {
-    saveSeats(updatedSeats);
-    saveLogs(logs);
+    saveLogs(logs); // 로그 먼저 저장
+    saveSeats(updatedSeats); // saveSeats 내부에서 notifyUpdate() 호출
     return true;
   }
   return false;
@@ -110,8 +118,8 @@ export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: str
     userName: seats[index].userName || "",
   });
 
-  saveSeats(seats);
   saveLogs(logs);
+  saveSeats(seats);
   
   return { action: newStatus, timestamp: now };
 }
