@@ -42,7 +42,10 @@ export default function UsageHistoryPage() {
 
   const handleExport = () => {
     if (exportLogsToCSV()) {
-      toast({ title: "내보내기 완료", description: "모든 과거 이용 기록이 포함된 CSV 파일이 생성되었습니다." });
+      toast({ 
+        title: "내보내기 완료", 
+        description: "모든 과거 이용 기록이 포함된 CSV 파일이 생성되었습니다. 구글 시트에서 '파일 > 가져오기'를 이용해 주세요." 
+      });
     } else {
       toast({ variant: "destructive", title: "데이터 없음", description: "내보낼 기록이 없습니다." });
     }
@@ -100,7 +103,7 @@ export default function UsageHistoryPage() {
                                   {log.action === 'IN' ? '입실' : '퇴실'}
                                 </Badge>
                                 <span className="text-[10px] font-bold text-muted-foreground">
-                                  {format(new Date(log.timestamp), 'MM/dd HH:mm:ss')}
+                                  {format(new Date(log.timestamp), 'MM/dd HH:mm')}
                                 </span>
                               </div>
                             )) : <span className="text-muted-foreground italic text-sm">기록 없음</span>}

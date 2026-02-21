@@ -25,8 +25,8 @@ export default function LibraryDashboard() {
     setMounted(true);
     refresh();
 
+    // 데이터 변경 이벤트를 감지하여 즉시 UI 갱신
     const handleSync = () => {
-      console.log('Sync event received');
       refresh();
     };
     window.addEventListener('library_store_sync', handleSync);
