@@ -41,13 +41,13 @@ export default function SeatDetailPage() {
   }, 0);
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-12" suppressHydrationWarning>
+    <div className="min-h-screen bg-background p-6 md:p-12">
       <div className="max-w-2xl mx-auto space-y-8">
-        {/* 숨겨진 뒤로가기 버튼: 여백처럼 보이게 처리 */}
+        {/* 숨겨진 뒤로가기 버튼 영역 */}
         <Button 
           variant="ghost" 
           onClick={() => router.push('/')}
-          className="w-10 h-10 p-0 text-transparent bg-transparent hover:bg-transparent border-none shadow-none focus-visible:ring-0 cursor-default select-none"
+          className="w-10 h-10 p-0 text-transparent bg-transparent hover:bg-transparent border-none shadow-none focus-visible:ring-0 cursor-default select-none mb-[-2rem]"
         >
           .
         </Button>

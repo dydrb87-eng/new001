@@ -17,8 +17,8 @@ export default function UserManagementPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setSeats(getSeats());
     setMounted(true);
+    setSeats(getSeats());
   }, []);
 
   const handleNameChange = (id: number, name: string) => {

@@ -44,7 +44,7 @@ export default function UsageHistoryPage() {
     if (exportLogsToCSV()) {
       toast({ 
         title: "내보내기 완료", 
-        description: "모든 과거 이용 기록이 포함된 CSV 파일이 생성되었습니다. 구글 시트에서 '파일 > 가져오기'를 이용해 주세요." 
+        description: "모든 과거 이용 기록이 포함된 CSV 파일이 생성되었습니다." 
       });
     } else {
       toast({ variant: "destructive", title: "데이터 없음", description: "내보낼 기록이 없습니다." });
@@ -62,7 +62,7 @@ export default function UsageHistoryPage() {
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleExport} className="font-bold gap-2">
-              <FileSpreadsheet className="w-4 h-4" /> 구글시트용 데이터 추출
+              <FileSpreadsheet className="w-4 h-4" /> 데이터 추출
             </Button>
             <Button variant="outline" onClick={handleReset} className="text-destructive font-bold gap-2">
               <RefreshCcw className="w-4 h-4" /> 데이터 초기화
