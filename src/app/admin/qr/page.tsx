@@ -28,7 +28,7 @@ export default function SeatQRPage() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-12 print:p-0 print:bg-white">
+    <div className="min-h-screen bg-background p-6 md:p-12 print:p-0 print:bg-white" suppressHydrationWarning>
       <div className="max-w-5xl mx-auto space-y-8 print:space-y-0">
         <div className="flex items-center justify-between print:hidden">
           <Button 

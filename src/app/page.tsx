@@ -50,7 +50,7 @@ export default function LibraryDashboard() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-12">
+    <div className="min-h-screen bg-background p-6 md:p-12" suppressHydrationWarning>
       <div className="max-w-6xl mx-auto space-y-8">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border pb-8">
           <div className="space-y-1">

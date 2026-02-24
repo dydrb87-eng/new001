@@ -41,9 +41,9 @@ export default function SeatDetailPage() {
   }, 0);
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-12">
+    <div className="min-h-screen bg-background p-6 md:p-12" suppressHydrationWarning>
       <div className="max-w-2xl mx-auto space-y-8">
-        {/* 숨겨진 뒤로가기 버튼 영역 */}
+        {/* 숨겨진 뒤로가기 버튼 영역: 왼쪽 여백만큼의 크기만 차지하며 투명함 */}
         <Button 
           variant="ghost" 
           onClick={() => router.push('/')}
@@ -104,6 +104,7 @@ export default function SeatDetailPage() {
           </CardContent>
         </Card>
 
+        {/* 이용 기록: 이제 학생들도 확인할 수 있도록 항상 표시됨 */}
         <Card className="shadow-sm border-border bg-white overflow-hidden">
           <CardHeader className="border-b bg-muted/30">
             <CardTitle className="flex items-center gap-2 text-primary font-bold">

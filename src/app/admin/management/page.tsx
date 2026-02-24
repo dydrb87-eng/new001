@@ -54,7 +54,7 @@ export default function UsageHistoryPage() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-12">
+    <div className="min-h-screen bg-background p-6 md:p-12" suppressHydrationWarning>
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => router.push('/')} className="font-bold">

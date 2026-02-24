@@ -38,7 +38,7 @@ export default function UserManagementPage() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-12">
+    <div className="min-h-screen bg-background p-6 md:p-12" suppressHydrationWarning>
       <div className="max-w-4xl mx-auto space-y-8">
         <Button 
           variant="ghost" 
