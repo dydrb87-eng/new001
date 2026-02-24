@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { toggleSeat, getSeatLogs } from '@/lib/seat-store';
 import { SeatLog, SeatStatus } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils';
 export default function SeatDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const searchParams = useSearchParams();
   const seatId = Number(params.id);
 
   const [lastAction, setLastAction] = useState<{ action: SeatStatus; timestamp: string } | null>(null);
@@ -42,7 +41,7 @@ export default function SeatDetailPage() {
   }, 0);
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-12">
+    <div className="min-h-screen bg-background p-6 md:p-12" suppressHydrationWarning>
       <div className="max-w-2xl mx-auto space-y-8">
         {/* 숨겨진 뒤로가기 버튼: 여백처럼 보이게 처리 */}
         <Button 
@@ -107,7 +106,7 @@ export default function SeatDetailPage() {
 
         <Card className="shadow-sm border-border bg-white overflow-hidden">
           <CardHeader className="border-b bg-muted/30">
-            <CardTitle className="flex items-center gap-2 text-primary">
+            <CardTitle className="flex items-center gap-2 text-primary font-bold">
               <History className="w-5 h-5 text-accent" />
               이용 기록
             </CardTitle>
