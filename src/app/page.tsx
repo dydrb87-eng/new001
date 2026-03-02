@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
@@ -26,7 +25,6 @@ export default function LibraryDashboard() {
     setMounted(true);
     refresh();
 
-    // 상세 페이지나 관리자 도구에서 데이터가 변경되면 즉시 리프레시
     const handleSync = () => {
       refresh();
     };

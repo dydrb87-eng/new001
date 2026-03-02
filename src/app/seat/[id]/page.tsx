@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
@@ -32,7 +31,6 @@ export default function SeatDetailPage() {
     setMounted(true);
     loadData();
 
-    // 외부(대시보드 일괄 처리 등)에서 상태가 변경될 경우를 대비해 이벤트 리스너 등록
     const handleSync = () => loadData();
     window.addEventListener('library_store_sync', handleSync);
     return () => window.removeEventListener('library_store_sync', handleSync);
@@ -41,12 +39,10 @@ export default function SeatDetailPage() {
   if (!mounted) return null;
 
   const handleToggle = () => {
-    // 버튼 클릭 시에만 실제 데이터 변경 발생
     toggleSeat(seatId);
     loadData();
   };
 
-  // 누적 이용 시간 계산 (로그가 내림차순 정렬되어 있으므로 i가 퇴실이면 i+1은 입실)
   const totalUsageMinutes = logs.reduce((acc, log, idx, arr) => {
     if (log.action === 'OUT' && idx < arr.length - 1) {
       const nextLog = arr[idx + 1];
@@ -63,11 +59,10 @@ export default function SeatDetailPage() {
   return (
     <div className="min-h-screen bg-background p-6 md:p-12" suppressHydrationWarning>
       <div className="max-w-2xl mx-auto space-y-8">
-        {/* 숨겨진 뒤로가기 버튼 영역 */}
         <Button 
           variant="ghost" 
           onClick={() => router.push('/')}
-          className="w-10 h-10 p-0 text-transparent bg-transparent hover:bg-transparent border-none shadow-none focus-visible:ring-0 cursor-default select-none mb-[-2rem]"
+          className="w-10 h-10 p-0 text-transparent bg-transparent hover:bg-transparent border-none shadow-none focus-visible:ring-0 cursor-default select-none mb-[-2rem] ml-[-2rem]"
         >
           .
         </Button>
