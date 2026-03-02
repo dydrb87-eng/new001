@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSeats, updateSeatUser } from '@/lib/seat-store';
+import { subscribeSeats, updateSeatUser } from '@/lib/seat-store';
 import { SeatData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -18,17 +18,20 @@ export default function UserManagementPage() {
 
   useEffect(() => {
     setMounted(true);
-    setSeats(getSeats());
+    const unsubscribe = subscribeSeats((updatedSeats) => {
+      setSeats(updatedSeats);
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleNameChange = (id: number, name: string) => {
     setSeats(prev => prev.map(s => s.id === id ? { ...s, userName: name } : s));
   };
 
-  const handleSave = () => {
-    seats.forEach(seat => {
-      updateSeatUser(seat.id, seat.userName || '');
-    });
+  const handleSave = async () => {
+    for (const seat of seats) {
+      await updateSeatUser(seat.id, seat.userName || '');
+    }
     toast({
       title: "저장 완료",
       description: "사용자 이름이 성공적으로 업데이트되었습니다.",

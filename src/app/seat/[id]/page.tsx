@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { toggleSeat, getSeatLogs, getSeats } from '@/lib/seat-store';
+import { toggleSeat, subscribeSeats, subscribeLogs } from '@/lib/seat-store';
 import { SeatLog, SeatData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -19,40 +19,30 @@ export default function SeatDetailPage() {
   const [seat, setSeat] = useState<SeatData | null>(null);
   const [logs, setLogs] = useState<SeatLog[]>([]);
   const [mounted, setMounted] = useState(false);
-
-  const loadData = useCallback(() => {
-    const allSeats = getSeats();
-    const currentSeat = allSeats.find(s => s.id === seatId);
-    setSeat(currentSeat || null);
-    setLogs(getSeatLogs(seatId));
-  }, [seatId]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setMounted(true);
-    loadData();
+    const unsubSeats = subscribeSeats((seats) => {
+      const current = seats.find(s => s.id === seatId);
+      setSeat(current || null);
+      setLoading(false);
+    });
+    const unsubLogs = subscribeLogs((allLogs) => {
+      setLogs(allLogs.filter(l => l.seatId === seatId));
+    });
 
-    const handleSync = () => loadData();
-    window.addEventListener('library_store_sync', handleSync);
-    return () => window.removeEventListener('library_store_sync', handleSync);
-  }, [loadData]);
+    return () => {
+      unsubSeats();
+      unsubLogs();
+    };
+  }, [seatId]);
 
-  if (!mounted) return null;
+  if (!mounted || loading) return null;
 
-  const handleToggle = () => {
-    toggleSeat(seatId);
-    loadData();
+  const handleToggle = async () => {
+    await toggleSeat(seatId);
   };
-
-  const totalUsageMinutes = logs.reduce((acc, log, idx, arr) => {
-    if (log.action === 'OUT' && idx < arr.length - 1) {
-      const nextLog = arr[idx + 1];
-      if (nextLog.action === 'IN') {
-        const diff = new Date(log.timestamp).getTime() - new Date(nextLog.timestamp).getTime();
-        return acc + (diff / 1000 / 60);
-      }
-    }
-    return acc;
-  }, 0);
 
   const isOccupied = seat?.status === 'IN';
 
@@ -126,9 +116,6 @@ export default function SeatDetailPage() {
               <History className="w-5 h-5 text-accent" />
               이용 기록
             </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              누적 이용 시간: <span className="font-bold text-primary">{Math.floor(totalUsageMinutes)}분</span>
-            </p>
           </CardHeader>
           <CardContent className="p-0">
             <div className="max-h-96 overflow-y-auto">

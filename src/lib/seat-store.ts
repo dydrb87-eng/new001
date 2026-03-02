@@ -1,146 +1,124 @@
+import { db } from './firebase';
+import { 
+  collection, 
+  doc, 
+  getDocs, 
+  setDoc, 
+  updateDoc, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  addDoc,
+  writeBatch,
+  getDoc
+} from 'firebase/firestore';
 import { SeatData, SeatLog, SeatStatus } from './types';
 
-const SEAT_STORAGE_KEY = 'library_seats_data';
-const LOGS_STORAGE_KEY = 'library_usage_logs';
-const SYNC_EVENT = 'library_store_sync';
+const SEATS_COLLECTION = 'seats';
+const LOGS_COLLECTION = 'logs';
 
-export const notifyUpdate = () => {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent(SYNC_EVENT));
-  }
-};
-
-export function getSeats(): SeatData[] {
-  if (typeof window === 'undefined') return [];
-  const stored = localStorage.getItem(SEAT_STORAGE_KEY);
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch (e) {
-      console.error("Failed to parse seats", e);
+export function subscribeSeats(callback: (seats: SeatData[]) => void) {
+  return onSnapshot(collection(db, SEATS_COLLECTION), (snapshot) => {
+    const seats = snapshot.docs.map(doc => ({ id: Number(doc.id), ...doc.data() } as SeatData));
+    if (seats.length === 0) {
+      // 초기 데이터 생성
+      const initialSeats = Array.from({ length: 20 }, (_, i) => ({
+        id: i + 1,
+        status: 'OUT' as SeatStatus,
+        userName: '',
+      }));
+      initialSeats.forEach(async (seat) => {
+        await setDoc(doc(db, SEATS_COLLECTION, seat.id.toString()), {
+          status: seat.status,
+          userName: seat.userName
+        });
+      });
+      callback(initialSeats);
+    } else {
+      callback(seats.sort((a, b) => a.id - b.id));
     }
-  }
+  });
+}
+
+export function subscribeLogs(callback: (logs: SeatLog[]) => void) {
+  const q = query(collection(db, LOGS_COLLECTION), orderBy('timestamp', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SeatLog));
+    callback(logs);
+  });
+}
+
+export async function updateSeatUser(seatId: number, userName: string) {
+  const seatRef = doc(db, SEATS_COLLECTION, seatId.toString());
+  await updateDoc(seatRef, { userName });
+}
+
+export async function toggleSeat(seatId: number) {
+  const seatRef = doc(db, SEATS_COLLECTION, seatId.toString());
+  const seatSnap = await getDoc(seatRef);
   
-  const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
-    id: i + 1,
-    status: 'OUT',
-    userName: '',
-  }));
-  localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(initialSeats));
-  return initialSeats;
-}
-
-export function saveSeats(seats: SeatData[]) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(seats));
-  notifyUpdate();
-}
-
-export function getLogs(): SeatLog[] {
-  if (typeof window === 'undefined') return [];
-  const stored = localStorage.getItem(LOGS_STORAGE_KEY);
-  if (!stored) return [];
-  try {
-    return JSON.parse(stored);
-  } catch (e) {
-    return [];
-  }
-}
-
-export function saveLogs(logs: SeatLog[]) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
-}
-
-export function getSeatLogs(seatId: number): SeatLog[] {
-  const logs = getLogs();
-  return logs
-    .filter(log => log.seatId === seatId)
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-}
-
-export function updateSeatUser(seatId: number, userName: string) {
-  const seats = getSeats();
-  const index = seats.findIndex(s => s.id === seatId);
-  if (index !== -1) {
-    seats[index].userName = userName;
-    saveSeats(seats);
-  }
-}
-
-export function batchUpdateStatus(status: SeatStatus) {
-  if (typeof window === 'undefined') return false;
+  if (!seatSnap.exists()) return;
   
-  const seats = getSeats();
-  const logs = getLogs();
+  const currentData = seatSnap.data();
+  const newStatus: SeatStatus = currentData.status === 'IN' ? 'OUT' : 'IN';
   const now = new Date().toISOString();
-  
+
+  await updateDoc(seatRef, { status: newStatus });
+  await addDoc(collection(db, LOGS_COLLECTION), {
+    seatId,
+    action: newStatus,
+    timestamp: now,
+    userName: currentData.userName || ""
+  });
+
+  return { action: newStatus, timestamp: now };
+}
+
+export async function batchUpdateStatus(status: SeatStatus) {
+  const snapshot = await getDocs(collection(db, SEATS_COLLECTION));
+  const batch = writeBatch(db);
+  const now = new Date().toISOString();
   let changed = false;
-  const updatedSeats = seats.map(seat => {
-    if (seat.status !== status) {
+
+  snapshot.docs.forEach(docSnap => {
+    const data = docSnap.data();
+    if (data.status !== status) {
       changed = true;
-      logs.push({
-        id: Math.random().toString(36).substring(2, 9) + Date.now(),
-        seatId: seat.id,
+      batch.update(docSnap.ref, { status });
+      const logRef = doc(collection(db, LOGS_COLLECTION));
+      batch.set(logRef, {
+        seatId: Number(docSnap.id),
         action: status,
         timestamp: now,
-        userName: seat.userName || "",
+        userName: data.userName || ""
       });
-      return { ...seat, status };
     }
-    return seat;
   });
 
   if (changed) {
-    localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
-    localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(updatedSeats));
-    notifyUpdate();
+    await batch.commit();
     return true;
   }
   return false;
 }
 
-export function toggleSeat(seatId: number): { action: SeatStatus; timestamp: string } {
-  const seats = getSeats();
-  const logs = getLogs();
-  const index = seats.findIndex(s => s.id === seatId);
-  
-  if (index === -1) throw new Error('Seat not found');
+export async function resetAll() {
+  const seatsSnap = await getDocs(collection(db, SEATS_COLLECTION));
+  const logsSnap = await getDocs(collection(db, LOGS_COLLECTION));
+  const batch = writeBatch(db);
 
-  const now = new Date().toISOString();
-  const newStatus: SeatStatus = seats[index].status === 'IN' ? 'OUT' : 'IN';
-  
-  seats[index].status = newStatus;
-  logs.push({
-    id: Math.random().toString(36).substring(2, 9) + Date.now(),
-    seatId,
-    action: newStatus,
-    timestamp: now,
-    userName: seats[index].userName || "",
+  seatsSnap.docs.forEach(doc => {
+    batch.update(doc.ref, { status: 'OUT', userName: '' });
   });
 
-  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
-  saveSeats(seats);
-  
-  return { action: newStatus, timestamp: now };
+  logsSnap.docs.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+
+  await batch.commit();
 }
 
-export function resetAll() {
-  if (typeof window === 'undefined') return;
-  
-  const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
-    id: i + 1,
-    status: 'OUT',
-    userName: '',
-  }));
-  
-  localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(initialSeats));
-  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify([]));
-  notifyUpdate();
-}
-
-export function exportLogsToCSV() {
-  const logs = getLogs();
+export function exportLogsToCSV(logs: SeatLog[]) {
   if (logs.length === 0) return false;
 
   const sortedLogs = [...logs].sort((a, b) => 

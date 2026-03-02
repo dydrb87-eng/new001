@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSeats, getLogs, resetAll, exportLogsToCSV } from '@/lib/seat-store';
+import { subscribeSeats, subscribeLogs, resetAll, exportLogsToCSV } from '@/lib/seat-store';
 import { SeatData, SeatLog } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -20,28 +20,30 @@ export default function UsageHistoryPage() {
   const [logs, setLogs] = useState<SeatLog[]>([]);
   const [mounted, setMounted] = useState(false);
 
-  const load = useCallback(() => {
-    setSeats(getSeats());
-    setLogs(getLogs());
-  }, []);
-
   useEffect(() => {
     setMounted(true);
-    load();
-    const handleSync = () => load();
-    window.addEventListener('library_store_sync', handleSync);
-    return () => window.removeEventListener('library_store_sync', handleSync);
-  }, [load]);
+    const unsubSeats = subscribeSeats((updatedSeats) => {
+      setSeats(updatedSeats);
+    });
+    const unsubLogs = subscribeLogs((updatedLogs) => {
+      setLogs(updatedLogs);
+    });
 
-  const handleReset = () => {
+    return () => {
+      unsubSeats();
+      unsubLogs();
+    };
+  }, []);
+
+  const handleReset = async () => {
     if (confirm('모든 이용 기록과 설정을 초기화하시겠습니까? 기록이 영구적으로 삭제됩니다.')) {
-      resetAll();
+      await resetAll();
       toast({ title: "초기화 완료", description: "모든 데이터가 삭제되었습니다." });
     }
   };
 
   const handleExport = () => {
-    if (exportLogsToCSV()) {
+    if (exportLogsToCSV(logs)) {
       toast({ 
         title: "내보내기 완료", 
         description: "모든 과거 이용 기록이 포함된 CSV 파일이 생성되었습니다." 
@@ -86,7 +88,7 @@ export default function UsageHistoryPage() {
               </TableHeader>
               <TableBody>
                 {seats.map((seat) => {
-                  const seatLogs = logs.filter(l => l.seatId === seat.id).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                  const seatLogs = logs.filter(l => l.seatId === seat.id);
                   return (
                     <TableRow key={seat.id}>
                       <TableCell className="text-center border-r bg-muted/5">

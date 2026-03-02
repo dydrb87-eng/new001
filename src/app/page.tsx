@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
-import { getSeats, batchUpdateStatus } from '@/lib/seat-store';
+import { useEffect, useState } from 'react';
+import { subscribeSeats, batchUpdateStatus } from '@/lib/seat-store';
 import { SeatData } from '@/lib/types';
 import { SeatCard } from '@/components/SeatCard';
 import { Switch } from '@/components/ui/switch';
@@ -17,25 +17,18 @@ export default function LibraryDashboard() {
   const [mounted, setMounted] = useState(false);
   const { toast } = useToast();
 
-  const refresh = useCallback(() => {
-    setSeats(getSeats());
-  }, []);
-
   useEffect(() => {
     setMounted(true);
-    refresh();
+    const unsubscribe = subscribeSeats((updatedSeats) => {
+      setSeats(updatedSeats);
+    });
+    return () => unsubscribe();
+  }, []);
 
-    const handleSync = () => {
-      refresh();
-    };
-    window.addEventListener('library_store_sync', handleSync);
-    return () => window.removeEventListener('library_store_sync', handleSync);
-  }, [refresh]);
-
-  const handleBatch = (status: 'IN' | 'OUT') => {
+  const handleBatch = async (status: 'IN' | 'OUT') => {
     const msg = status === 'IN' ? '모든 퇴실 자리를 입실 처리하시겠습니까?' : '모든 입실 자리를 퇴실 처리하시겠습니까?';
     if (window.confirm(msg)) {
-      const success = batchUpdateStatus(status);
+      const success = await batchUpdateStatus(status);
       if (success) {
         toast({
           title: "일괄 처리 완료",
