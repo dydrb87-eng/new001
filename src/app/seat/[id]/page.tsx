@@ -1,9 +1,10 @@
+
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { toggleSeat, getSeatLogs } from '@/lib/seat-store';
-import { SeatLog, SeatStatus } from '@/lib/types';
+import { toggleSeat, getSeatLogs, getSeats } from '@/lib/seat-store';
+import { SeatLog, SeatData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Clock, History, UserCheck, UserX, ArrowLeftRight } from 'lucide-react';
@@ -16,19 +17,36 @@ export default function SeatDetailPage() {
   const params = useParams();
   const seatId = Number(params.id);
 
-  const [lastAction, setLastAction] = useState<{ action: SeatStatus; timestamp: string } | null>(null);
+  const [seat, setSeat] = useState<SeatData | null>(null);
   const [logs, setLogs] = useState<SeatLog[]>([]);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    const result = toggleSeat(seatId);
-    setLastAction(result);
+  const loadData = useCallback(() => {
+    const allSeats = getSeats();
+    const currentSeat = allSeats.find(s => s.id === seatId);
+    setSeat(currentSeat || null);
     setLogs(getSeatLogs(seatId));
   }, [seatId]);
 
+  useEffect(() => {
+    setMounted(true);
+    loadData();
+
+    // 외부(대시보드 일괄 처리 등)에서 상태가 변경될 경우를 대비해 이벤트 리스너 등록
+    const handleSync = () => loadData();
+    window.addEventListener('library_store_sync', handleSync);
+    return () => window.removeEventListener('library_store_sync', handleSync);
+  }, [loadData]);
+
   if (!mounted) return null;
 
+  const handleToggle = () => {
+    // 버튼 클릭 시에만 실제 데이터 변경 발생
+    toggleSeat(seatId);
+    loadData();
+  };
+
+  // 누적 이용 시간 계산 (로그가 내림차순 정렬되어 있으므로 i가 퇴실이면 i+1은 입실)
   const totalUsageMinutes = logs.reduce((acc, log, idx, arr) => {
     if (log.action === 'OUT' && idx < arr.length - 1) {
       const nextLog = arr[idx + 1];
@@ -40,9 +58,12 @@ export default function SeatDetailPage() {
     return acc;
   }, 0);
 
+  const isOccupied = seat?.status === 'IN';
+
   return (
     <div className="min-h-screen bg-background p-6 md:p-12" suppressHydrationWarning>
       <div className="max-w-2xl mx-auto space-y-8">
+        {/* 숨겨진 뒤로가기 버튼 영역 */}
         <Button 
           variant="ghost" 
           onClick={() => router.push('/')}
@@ -55,7 +76,7 @@ export default function SeatDetailPage() {
           <CardHeader className="text-center bg-primary text-white rounded-t-lg">
             <CardTitle className="text-5xl font-black mb-2">{seatId}번 자리</CardTitle>
             <div className="flex items-center justify-center gap-2">
-              {lastAction?.action === 'IN' ? (
+              {isOccupied ? (
                 <Badge variant="secondary" className="bg-accent text-white border-none px-4 py-1 text-base animate-pulse">
                   현재 이용 중
                 </Badge>
@@ -70,35 +91,36 @@ export default function SeatDetailPage() {
             <div className="space-y-4">
               <div className="flex justify-center">
                 <div className={cn(
-                  "p-6 rounded-full",
-                  lastAction?.action === 'IN' ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground"
+                  "p-6 rounded-full transition-colors duration-500",
+                  isOccupied ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground"
                 )}>
-                  {lastAction?.action === 'IN' ? <UserCheck className="w-16 h-16" /> : <UserX className="w-16 h-16" />}
+                  {isOccupied ? <UserCheck className="w-16 h-16" /> : <UserX className="w-16 h-16" />}
                 </div>
               </div>
               
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold text-primary">
-                  {lastAction?.action === 'IN' ? '입실하였습니다' : '퇴실하였습니다'}
+                  {isOccupied ? '현재 사용 중인 자리입니다' : '현재 비어 있는 자리입니다'}
                 </h2>
-                <div className="flex items-center justify-center gap-2 text-muted-foreground font-medium">
-                  <Clock className="w-4 h-4" />
-                  <span>처리 시간: {lastAction && format(new Date(lastAction.timestamp), 'HH:mm:ss')}</span>
-                </div>
+                {logs.length > 0 && (
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground font-medium">
+                    <Clock className="w-4 h-4" />
+                    <span>최근 기록: {format(new Date(logs[0].timestamp), 'HH:mm:ss')} ({logs[0].action === 'IN' ? '입실' : '퇴실'})</span>
+                  </div>
+                )}
               </div>
             </div>
 
             <Button 
               size="lg" 
-              className="w-full bg-accent hover:bg-accent/90 text-white font-bold h-14 text-lg shadow-md transition-all active:scale-95"
-              onClick={() => {
-                const result = toggleSeat(seatId);
-                setLastAction(result);
-                setLogs(getSeatLogs(seatId));
-              }}
+              className={cn(
+                "w-full font-bold h-14 text-lg shadow-md transition-all active:scale-95 gap-2",
+                isOccupied ? "bg-slate-500 hover:bg-slate-600" : "bg-accent hover:bg-accent/90"
+              )}
+              onClick={handleToggle}
             >
-              <ArrowLeftRight className="w-5 h-5 mr-2" />
-              상태 변경하기
+              <ArrowLeftRight className="w-5 h-5" />
+              {isOccupied ? '퇴실 처리하기' : '입실 처리하기'}
             </Button>
           </CardContent>
         </Card>
