@@ -17,23 +17,33 @@ import { SeatData, SeatLog, SeatStatus } from './types';
 const SEATS_COLLECTION = 'seats';
 const LOGS_COLLECTION = 'logs';
 
+// 관리자 QR 페이지 등에서 사용할 전체 자리 목록 가져오기
+export async function getSeats(): Promise<SeatData[]> {
+  const snapshot = await getDocs(collection(db, SEATS_COLLECTION));
+  const seats = snapshot.docs.map(doc => ({ id: Number(doc.id), ...doc.data() } as SeatData));
+  return seats.sort((a, b) => a.id - b.id);
+}
+
 export function subscribeSeats(callback: (seats: SeatData[]) => void) {
-  return onSnapshot(collection(db, SEATS_COLLECTION), (snapshot) => {
-    const seats = snapshot.docs.map(doc => ({ id: Number(doc.id), ...doc.data() } as SeatData));
+  return onSnapshot(collection(db, SEATS_COLLECTION), async (snapshot) => {
+    let seats = snapshot.docs.map(doc => ({ id: Number(doc.id), ...doc.data() } as SeatData));
+    
     if (seats.length === 0) {
-      // 초기 데이터 생성
-      const initialSeats = Array.from({ length: 20 }, (_, i) => ({
+      // 초기 데이터가 없으면 서버에 생성
+      const batch = writeBatch(db);
+      const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
         id: i + 1,
-        status: 'OUT' as SeatStatus,
+        status: 'OUT',
         userName: '',
       }));
-      initialSeats.forEach(async (seat) => {
-        await setDoc(doc(db, SEATS_COLLECTION, seat.id.toString()), {
-          status: seat.status,
-          userName: seat.userName
-        });
+      
+      initialSeats.forEach((seat) => {
+        const ref = doc(db, SEATS_COLLECTION, seat.id.toString());
+        batch.set(ref, { status: seat.status, userName: seat.userName });
       });
-      callback(initialSeats);
+      
+      await batch.commit();
+      // 생성 후 바로 콜백을 호출하지 않고, 다음 snapshot을 기다림
     } else {
       callback(seats.sort((a, b) => a.id - b.id));
     }

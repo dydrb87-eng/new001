@@ -17,7 +17,11 @@ export default function SeatQRPage() {
 
   useEffect(() => {
     setMounted(true);
-    setSeats(getSeats());
+    const fetchSeats = async () => {
+      const data = await getSeats();
+      setSeats(data);
+    };
+    fetchSeats();
     setBaseUrl(window.location.origin);
   }, []);
 
@@ -37,7 +41,7 @@ export default function SeatQRPage() {
             className="group hover:bg-white"
           >
             <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-            대시보드로 돌아가기
+            자리 현황으로 돌아가기
           </Button>
           <Button onClick={handlePrint} className="gap-2">
             <Printer className="w-4 h-4" />
