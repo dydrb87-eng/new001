@@ -7,7 +7,7 @@ import { SeatData } from '@/lib/types';
 import { SeatCard } from '@/components/SeatCard';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { LayoutGrid, ShieldCheck, UserCheck, UserX, TableProperties, QrCode, Users } from 'lucide-react';
+import { LayoutGrid, ShieldCheck, UserCheck, UserX, TableProperties, QrCode, Users, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -16,13 +16,16 @@ export default function LibraryDashboard() {
   const [seats, setSeats] = useState<SeatData[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     setMounted(true);
-    // 실시간 구독 시작
     const unsubscribe = subscribeSeats((updatedSeats) => {
       setSeats(updatedSeats);
+      if (updatedSeats.length > 0) {
+        setLoading(false);
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -85,14 +88,15 @@ export default function LibraryDashboard() {
         </header>
 
         <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {seats.length > 0 ? (
+          {loading ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-20 gap-4">
+              <Loader2 className="w-12 h-12 text-primary animate-spin opacity-50" />
+              <p className="text-muted-foreground font-bold text-lg">자리를 불러오는 중입니다...</p>
+            </div>
+          ) : (
             seats.map((seat) => (
               <SeatCard key={seat.id} seat={seat} isAdmin={isAdmin} />
             ))
-          ) : (
-            <div className="col-span-full text-center py-20 text-muted-foreground font-bold">
-              자리를 불러오는 중입니다...
-            </div>
           )}
         </main>
       </div>

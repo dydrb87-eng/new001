@@ -7,7 +7,7 @@ import { toggleSeat, subscribeSeats, subscribeLogs } from '@/lib/seat-store';
 import { SeatLog, SeatData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Clock, History, UserCheck, UserX, ArrowLeftRight } from 'lucide-react';
+import { Clock, History, UserCheck, UserX, ArrowLeftRight, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -39,7 +39,16 @@ export default function SeatDetailPage() {
     };
   }, [seatId]);
 
-  if (!mounted || loading) return null;
+  if (!mounted) return null;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-10 h-10 text-primary animate-spin opacity-50" />
+        <p className="text-muted-foreground font-bold">자리 정보를 불러오는 중입니다...</p>
+      </div>
+    );
+  }
 
   const handleToggle = async () => {
     await toggleSeat(seatId);
