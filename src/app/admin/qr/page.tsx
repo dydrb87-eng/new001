@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -6,20 +7,25 @@ import { getSeats } from '@/lib/seat-store';
 import { SeatData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, Printer, QrCode } from 'lucide-react';
+import { ChevronLeft, Printer, QrCode, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function SeatQRPage() {
   const router = useRouter();
   const [seats, setSeats] = useState<SeatData[]>([]);
   const [baseUrl, setBaseUrl] = useState('');
+  const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     const fetchSeats = async () => {
-      const data = await getSeats();
-      setSeats(data);
+      try {
+        const data = await getSeats();
+        setSeats(data);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchSeats();
     setBaseUrl(window.location.origin);
@@ -38,12 +44,12 @@ export default function SeatQRPage() {
           <Button 
             variant="ghost" 
             onClick={() => router.push('/')}
-            className="group hover:bg-white"
+            className="group hover:bg-white font-bold"
           >
             <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
             자리 현황으로 돌아가기
           </Button>
-          <Button onClick={handlePrint} className="gap-2">
+          <Button onClick={handlePrint} className="gap-2 font-bold" disabled={loading}>
             <Printer className="w-4 h-4" />
             페이지 인쇄하기
           </Button>
@@ -59,24 +65,31 @@ export default function SeatQRPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 print:grid-cols-3 print:gap-4">
-          {seats.map((seat) => (
-            <Card key={seat.id} className="border-2 border-dashed border-muted-foreground/30 shadow-none overflow-hidden print:border-solid print:border-gray-300">
-              <CardContent className="p-6 flex flex-col items-center justify-center space-y-4">
-                <div className="text-4xl font-black text-primary border-b-4 border-accent pb-1 w-full text-center">
-                  자리 {seat.id}
-                </div>
-                <div className="bg-white p-2 rounded-lg shadow-sm border border-muted">
-                  <QRCodeSVG value={`${baseUrl}/seat/${seat.id}`} size={160} />
-                </div>
-                <div className="text-[10px] text-muted-foreground text-center font-medium leading-tight">
-                  이 QR 코드를 스캔하면<br />
-                  즉시 입실/퇴실 처리가 가능합니다.
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            <p className="text-muted-foreground font-bold">자리 정보를 불러오는 중입니다...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 print:grid-cols-3 print:gap-4">
+            {seats.map((seat) => (
+              <Card key={seat.id} className="border-2 border-dashed border-muted-foreground/30 shadow-none overflow-hidden print:border-solid print:border-gray-300">
+                <CardContent className="p-6 flex flex-col items-center justify-center space-y-4">
+                  <div className="text-4xl font-black text-primary border-b-4 border-accent pb-1 w-full text-center">
+                    자리 {seat.id}
+                  </div>
+                  <div className="bg-white p-2 rounded-lg shadow-sm border border-muted">
+                    <QRCodeSVG value={`${baseUrl}/seat/${seat.id}`} size={160} />
+                  </div>
+                  <div className="text-[10px] text-muted-foreground text-center font-medium leading-tight">
+                    이 QR 코드를 스캔하면<br />
+                    즉시 입실/퇴실 처리가 가능합니다.
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       <style jsx global>{`

@@ -112,7 +112,6 @@ export default function SeatDetailPage() {
           </CardContent>
         </Card>
 
-        {/* 학생들도 자신의 이용 기록을 볼 수 있도록 노출 */}
         <Card className="shadow-sm border-border bg-white overflow-hidden">
           <CardHeader className="border-b bg-muted/30">
             <CardTitle className="flex items-center gap-2 text-primary font-bold">

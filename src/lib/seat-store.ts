@@ -18,32 +18,37 @@ import { SeatData, SeatLog, SeatStatus } from './types';
 const SEATS_COLLECTION = 'seats';
 const LOGS_COLLECTION = 'logs';
 
+// 초기 자리 생성 함수
+async function initializeDefaultSeats() {
+  const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
+    id: i + 1,
+    status: 'OUT',
+    userName: '',
+  }));
+  
+  const batch = writeBatch(db);
+  initialSeats.forEach((seat) => {
+    const ref = doc(db, SEATS_COLLECTION, seat.id.toString());
+    batch.set(ref, { status: seat.status, userName: seat.userName });
+  });
+  await batch.commit();
+  return initialSeats;
+}
+
 // 관리자 QR 페이지 등에서 사용할 전체 자리 목록 가져오기
 export async function getSeats(): Promise<SeatData[]> {
   const snapshot = await getDocs(collection(db, SEATS_COLLECTION));
+  if (snapshot.empty) {
+    return await initializeDefaultSeats();
+  }
   const seats = snapshot.docs.map(doc => ({ id: Number(doc.id), ...doc.data() } as SeatData));
   return seats.sort((a, b) => a.id - b.id);
 }
 
 export function subscribeSeats(callback: (seats: SeatData[]) => void) {
-  // 실시간 리스너 설정
-  return onSnapshot(collection(db, SEATS_COLLECTION), (snapshot) => {
+  return onSnapshot(collection(db, SEATS_COLLECTION), async (snapshot) => {
     if (snapshot.empty) {
-      // 데이터가 아예 없는 경우 초기 20개 자리 생성
-      const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
-        id: i + 1,
-        status: 'OUT',
-        userName: '',
-      }));
-      
-      const batch = writeBatch(db);
-      initialSeats.forEach((seat) => {
-        const ref = doc(db, SEATS_COLLECTION, seat.id.toString());
-        batch.set(ref, { status: seat.status, userName: seat.userName });
-      });
-      batch.commit().catch(console.error);
-      
-      // 생성 직후 UI가 멈추지 않게 초기값 즉시 전달
+      const initialSeats = await initializeDefaultSeats();
       callback(initialSeats);
     } else {
       const seats = snapshot.docs.map(doc => ({ id: Number(doc.id), ...doc.data() } as SeatData));
@@ -75,10 +80,8 @@ export async function toggleSeat(seatId: number) {
   const newStatus: SeatStatus = currentData.status === 'IN' ? 'OUT' : 'IN';
   const now = new Date().toISOString();
 
-  // 상태 업데이트 (이 작업이 완료되면 onSnapshot이 트리거되어 모든 기기에 반영됨)
   await updateDoc(seatRef, { status: newStatus });
   
-  // 로그 추가
   await addDoc(collection(db, LOGS_COLLECTION), {
     seatId,
     action: newStatus,
