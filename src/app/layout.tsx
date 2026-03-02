@@ -1,11 +1,7 @@
-import type {Metadata} from 'next';
+"use client";
+
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-
-export const metadata: Metadata = {
-  title: '도서관 자리 매니저',
-  description: '도서관 자리 현황 및 이용 기록 관리 시스템',
-};
 
 export default function RootLayout({
   children,
