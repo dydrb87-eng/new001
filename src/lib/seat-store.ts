@@ -1,3 +1,4 @@
+
 import { db } from './firebase';
 import { 
   collection, 
@@ -25,26 +26,27 @@ export async function getSeats(): Promise<SeatData[]> {
 }
 
 export function subscribeSeats(callback: (seats: SeatData[]) => void) {
-  return onSnapshot(collection(db, SEATS_COLLECTION), async (snapshot) => {
-    let seats = snapshot.docs.map(doc => ({ id: Number(doc.id), ...doc.data() } as SeatData));
-    
-    if (seats.length === 0) {
-      // 초기 데이터가 없으면 서버에 생성
-      const batch = writeBatch(db);
+  // 실시간 리스너 설정
+  return onSnapshot(collection(db, SEATS_COLLECTION), (snapshot) => {
+    if (snapshot.empty) {
+      // 데이터가 아예 없는 경우 초기 20개 자리 생성
       const initialSeats: SeatData[] = Array.from({ length: 20 }, (_, i) => ({
         id: i + 1,
         status: 'OUT',
         userName: '',
       }));
       
+      const batch = writeBatch(db);
       initialSeats.forEach((seat) => {
         const ref = doc(db, SEATS_COLLECTION, seat.id.toString());
         batch.set(ref, { status: seat.status, userName: seat.userName });
       });
+      batch.commit().catch(console.error);
       
-      await batch.commit();
-      // 생성 후 바로 콜백을 호출하지 않고, 다음 snapshot을 기다림
+      // 생성 직후 UI가 멈추지 않게 초기값 즉시 전달
+      callback(initialSeats);
     } else {
+      const seats = snapshot.docs.map(doc => ({ id: Number(doc.id), ...doc.data() } as SeatData));
       callback(seats.sort((a, b) => a.id - b.id));
     }
   });
@@ -73,7 +75,10 @@ export async function toggleSeat(seatId: number) {
   const newStatus: SeatStatus = currentData.status === 'IN' ? 'OUT' : 'IN';
   const now = new Date().toISOString();
 
+  // 상태 업데이트 (이 작업이 완료되면 onSnapshot이 트리거되어 모든 기기에 반영됨)
   await updateDoc(seatRef, { status: newStatus });
+  
+  // 로그 추가
   await addDoc(collection(db, LOGS_COLLECTION), {
     seatId,
     action: newStatus,

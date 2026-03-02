@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -19,6 +20,7 @@ export default function LibraryDashboard() {
 
   useEffect(() => {
     setMounted(true);
+    // 실시간 구독 시작
     const unsubscribe = subscribeSeats((updatedSeats) => {
       setSeats(updatedSeats);
     });
@@ -83,9 +85,15 @@ export default function LibraryDashboard() {
         </header>
 
         <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {seats.map((seat) => (
-            <SeatCard key={seat.id} seat={seat} isAdmin={isAdmin} />
-          ))}
+          {seats.length > 0 ? (
+            seats.map((seat) => (
+              <SeatCard key={seat.id} seat={seat} isAdmin={isAdmin} />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-20 text-muted-foreground font-bold">
+              자리를 불러오는 중입니다...
+            </div>
+          )}
         </main>
       </div>
     </div>
