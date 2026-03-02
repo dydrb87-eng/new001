@@ -4,7 +4,6 @@ const SEAT_STORAGE_KEY = 'library_seats_data';
 const LOGS_STORAGE_KEY = 'library_usage_logs';
 const SYNC_EVENT = 'library_store_sync';
 
-// 변경 사항 알림 (이벤트를 통해 모든 컴포넌트에 알림)
 export const notifyUpdate = () => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(SYNC_EVENT));
@@ -69,7 +68,6 @@ export function updateSeatUser(seatId: number, userName: string) {
   }
 }
 
-// 전체 입실/퇴실 버튼 로직
 export function batchUpdateStatus(status: SeatStatus) {
   if (typeof window === 'undefined') return false;
   
@@ -79,7 +77,6 @@ export function batchUpdateStatus(status: SeatStatus) {
   
   let changed = false;
   const updatedSeats = seats.map(seat => {
-    // 이미 해당 상태인 좌석은 건너뛰고, 다른 좌석만 변경
     if (seat.status !== status) {
       changed = true;
       logs.push({
@@ -97,7 +94,7 @@ export function batchUpdateStatus(status: SeatStatus) {
   if (changed) {
     localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
     localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(updatedSeats));
-    notifyUpdate(); // 변경 알림 발생
+    notifyUpdate();
     return true;
   }
   return false;
@@ -139,15 +136,13 @@ export function resetAll() {
   
   localStorage.setItem(SEAT_STORAGE_KEY, JSON.stringify(initialSeats));
   localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify([]));
-  notifyUpdate(); // 초기화 알림 발생
+  notifyUpdate();
 }
 
-// 구글 시트용 모든 기록 내보내기 (BOM 추가로 한글 깨짐 방지)
 export function exportLogsToCSV() {
   const logs = getLogs();
   if (logs.length === 0) return false;
 
-  // 모든 과거 기록을 시간순으로 정렬
   const sortedLogs = [...logs].sort((a, b) => 
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
